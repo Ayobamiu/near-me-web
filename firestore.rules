@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read/write access to places for MVP
+    // TODO: Add authentication later for production
+    match /places/{placeId} {
+      allow read, write: if true;
+      
+      // Allow public access to users within places
+      match /users/{userId} {
+        allow read, write: if true;
+      }
+    }
+    
+    // Allow public read/write access to presence for MVP
+    match /presence/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Allow public read/write access to profiles for MVP
+    match /profiles/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Allow public read/write access to user profiles for MVP
+    match /userProfiles/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Allow public read/write access to connections for MVP
+    match /connections/{connectionId} {
+      allow read, write: if true;
+    }
+    
+    // Allow public read/write access to messages for MVP
+    match /messages/{messageId} {
+      allow read, write: if true;
+    }
+  }
+}

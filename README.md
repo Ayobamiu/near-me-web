@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NearMe Web MVP
+
+A web-based proximity social app built with Next.js and TailwindCSS.
+
+## Features
+
+- **QR Code Scanning**: Scan QR codes to join places
+- **Location-based Grouping**: Users within 100m radius are grouped together
+- **Real-time Updates**: See who's nearby in real-time
+- **LinkedIn-inspired Design**: Clean, professional interface
+- **Responsive Layout**: Works on desktop and mobile
+
+## Tech Stack
+
+- **Framework**: Next.js 15 with App Router
+- **Styling**: TailwindCSS
+- **Database**: Firebase Firestore
+- **Authentication**: Firebase Auth
+- **QR Scanning**: @yudiel/react-qr-scanner
+- **Geolocation**: Browser Geolocation API
 
 ## Getting Started
 
-First, run the development server:
+1. Install dependencies:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+   ```bash
+   npm install
+   ```
+
+2. Set up environment variables:
+   Create `.env.local` with your Firebase config:
+
+   ```
+   NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+   NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+   ```
+
+3. Run the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## User Flow
+
+### **First User (Place Creator):**
+
+1. **Scan QR Code**: Use camera to scan QR or enter place code
+2. **Allow Location**: Grant location access
+3. **Create Place**: Location becomes the "origin" for this place
+4. **Join Place**: Automatically added as first member
+
+### **Subsequent Users:**
+
+1. **Scan QR Code**: Use camera to scan QR or enter place code
+2. **Allow Location**: Grant location access
+3. **Check Proximity**: App checks if within 100m of place origin
+4. **Join Place**: If close enough, join the place group
+5. **View Members**: See all nearby users in real-time
+
+### **Key Features:**
+
+- **No URL Location Params**: Clean, shareable links
+- **First User Sets Origin**: Their location becomes the meeting point
+- **Real-time Proximity**: Live updates of who's nearby
+- **Geospatial Queries**: Efficient proximity-based user discovery
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── page.tsx              # Home page (QR scan/enter)
+│   ├── place/[id]/page.tsx   # Place page (group members)
+│   └── globals.css           # Global styles
+├── components/
+│   └── QRScanner.tsx         # QR code scanner component
+├── lib/
+│   ├── firebase.ts           # Firebase configuration
+│   └── geolocation.ts        # Location utilities
+└── types/
+    └── index.ts              # TypeScript type definitions
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Development Status
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+✅ **Completed:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js project setup with TailwindCSS
+- QR code scanning interface
+- Place page with LinkedIn-style layout
+- Geolocation API integration
+- Proximity-based grouping logic
+- Responsive design
 
-## Learn More
+🚧 **In Progress:**
 
-To learn more about Next.js, take a look at the following resources:
+- Firebase integration
+- Real-time updates
+- User authentication
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+📋 **Todo:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Connection features
+- Chat functionality
+- User profiles
+- Real-time database integration
