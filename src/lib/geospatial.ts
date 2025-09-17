@@ -1,10 +1,7 @@
 import {
     collection,
-    query,
-    where,
     getDocs,
     getDoc,
-    onSnapshot,
     doc,
     setDoc,
     updateDoc,
@@ -152,43 +149,8 @@ export const getPlaceUsersInProximity = async (
     return users;
 };
 
-// Real-time listener for place users
-export const subscribeToPlaceUsers = (
-    placeId: string,
-    centerLat: number,
-    centerLng: number,
-    radiusMeters: number = 100,
-    callback: (users: any[]) => void
-) => {
-    const placeRef = doc(db, 'places', placeId);
-    const usersRef = collection(placeRef, 'users');
-
-    return onSnapshot(usersRef, (snapshot) => {
-        const users: any[] = [];
-
-        snapshot.docs.forEach((userDoc) => {
-            const userData = userDoc.data();
-            if (userData.location) {
-                const distance = calculateDistance(
-                    centerLat,
-                    centerLng,
-                    userData.location.lat,
-                    userData.location.lng
-                );
-
-                if (distance <= radiusMeters) {
-                    users.push({
-                        id: userDoc.id,
-                        ...userData,
-                        distance
-                    });
-                }
-            }
-        });
-
-        callback(users);
-    });
-};
+// Note: Real-time listener functionality moved to API routes
+// This function is no longer used as we fetch users via API
 
 // Get place user count
 export const getPlaceUserCount = async (placeId: string): Promise<number> => {

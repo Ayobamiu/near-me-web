@@ -31,7 +31,7 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
         // Start scanning
         if (videoRef.current) {
           readerRef.current.decodeFromVideoDevice(
-            undefined,
+            null,
             videoRef.current,
             (result, error) => {
               if (result) {

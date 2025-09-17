@@ -5,10 +5,10 @@ import { calculateDistance } from '@/lib/geospatial';
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { placeId: string } }
+    { params }: { params: Promise<{ placeId: string }> }
 ) {
     try {
-        const { placeId } = params;
+        const { placeId } = await params;
         const body = await request.json();
         const { userId, lat, lng } = body;
 

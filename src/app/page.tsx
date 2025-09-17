@@ -7,7 +7,7 @@ import { getCurrentPosition } from "@/lib/geolocation";
 import { testFirebaseConnection } from "@/lib/testFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginForm from "@/components/LoginForm";
-import { calculateDistance } from "@/lib/geospatial";
+// import { calculateDistance } from "@/lib/geospatial"; // Not used in this file
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createPlace, joinPlace } from "@/lib/placeService";
@@ -108,12 +108,13 @@ export default function Home() {
       console.error("Error joining place:", error);
 
       // Check if it's a geolocation error
+      const errorWithCode = error as Error & { code?: number };
       if (
         error instanceof GeolocationPositionError ||
-        (error as any)?.code === 1 ||
-        (error as any)?.message?.includes("geolocation") ||
-        (error as any)?.message?.includes("location") ||
-        (error as any)?.message?.includes("Location access")
+        errorWithCode?.code === 1 ||
+        errorWithCode?.message?.includes("geolocation") ||
+        errorWithCode?.message?.includes("location") ||
+        errorWithCode?.message?.includes("Location access")
       ) {
         setGeolocationError((error as Error).message);
       } else {

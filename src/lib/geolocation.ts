@@ -34,9 +34,12 @@ export const getCurrentPosition = (): Promise<GeolocationPosition> => {
                         break;
                 }
 
-                const enhancedError = new Error(errorMessage);
-                (enhancedError as any).code = error.code;
-                (enhancedError as any).originalError = error;
+                const enhancedError = new Error(errorMessage) as Error & {
+                    code: number;
+                    originalError: GeolocationPositionError;
+                };
+                enhancedError.code = error.code;
+                enhancedError.originalError = error;
                 reject(enhancedError);
             },
             {

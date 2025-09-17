@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { calculateDistance } from '@/lib/geospatial';
 import { User } from '@/types';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { placeId: string } }
+    { params }: { params: Promise<{ placeId: string }> }
 ) {
     try {
-        const { placeId } = params;
+        const { placeId } = await params;
         const { searchParams } = new URL(request.url);
         const originLat = parseFloat(searchParams.get('originLat') || '0');
         const originLng = parseFloat(searchParams.get('originLng') || '0');

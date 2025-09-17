@@ -9,7 +9,6 @@ import {
   updateUserOnlineStatus,
   checkUserProximity,
   markUserOutOfRange,
-  removeUserFromPlace,
 } from "@/lib/geospatial";
 import {
   getPlaceUsers,
@@ -178,12 +177,13 @@ export default function PlacePage() {
       console.error("Error loading place data:", error);
 
       // Check if it's a geolocation error
+      const errorWithCode = error as Error & { code?: number };
       if (
         error instanceof GeolocationPositionError ||
-        (error as any)?.code === 1 ||
-        (error as any)?.message?.includes("geolocation") ||
-        (error as any)?.message?.includes("location") ||
-        (error as any)?.message?.includes("Location access")
+        errorWithCode?.code === 1 ||
+        errorWithCode?.message?.includes("geolocation") ||
+        errorWithCode?.message?.includes("location") ||
+        errorWithCode?.message?.includes("Location access")
       ) {
         setGeolocationError((error as Error).message);
       } else {
@@ -503,8 +503,10 @@ export default function PlacePage() {
                 How to enable location access:
               </h3>
               <ul className="text-xs text-blue-800 space-y-1 text-left">
-                <li>• Click the location icon in your browser's address bar</li>
-                <li>• Select "Allow" for location access</li>
+                <li>
+                  • Click the location icon in your browser&apos;s address bar
+                </li>
+                <li>• Select &quot;Allow&quot; for location access</li>
                 <li>• Refresh this page</li>
               </ul>
             </div>
@@ -551,8 +553,8 @@ export default function PlacePage() {
               <p className="text-gray-600">QR Code: {place.qrCode}</p>
               {isFirstUser && (
                 <p className="text-sm text-blue-600 mt-1">
-                  🎉 You're the first person here! Your location will become the
-                  meeting point.
+                  🎉 You&apos;re the first person here! Your location will
+                  become the meeting point.
                 </p>
               )}
             </div>
@@ -646,7 +648,7 @@ export default function PlacePage() {
                     </svg>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    You're not within 100m of this place
+                    You&apos;re not within 100m of this place
                   </p>
                   <p className="text-xs text-gray-500">
                     Move closer to the origin location to join
@@ -670,7 +672,7 @@ export default function PlacePage() {
                     </svg>
                   </div>
                   <p className="text-sm text-gray-600 mb-4">
-                    You're already in this place!
+                    You&apos;re already in this place!
                   </p>
                   <p className="text-xs text-gray-500">
                     You can see other nearby people below
@@ -696,7 +698,7 @@ export default function PlacePage() {
                   <p className="text-sm text-gray-600 mb-4">
                     {isFirstUser
                       ? "Ready to create place!"
-                      : "You're within range!"}
+                      : "You&apos;re within range!"}
                   </p>
                   <button
                     onClick={handleJoinPlace}

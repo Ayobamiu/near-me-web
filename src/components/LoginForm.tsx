@@ -36,9 +36,13 @@ export default function LoginForm() {
     setError("");
     try {
       await signInWithEmail(email, password);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Sign in error:", error);
-      setError(error.message || "Failed to sign in. Please try again.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to sign in. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -55,9 +59,13 @@ export default function LoginForm() {
     setError("");
     try {
       await signUp(email, password, name);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Sign up error:", error);
-      setError(error.message || "Failed to create account. Please try again.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to create account. Please try again.";
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -156,7 +164,7 @@ export default function LoginForm() {
               </div>
 
               <p className="text-center text-sm text-gray-600 mt-4">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <button
                   onClick={() => setIsSignUp(true)}
                   className="text-blue-600 hover:text-blue-700 font-medium"
