@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { calculateDistance } from '@/lib/geospatial';
 import { User } from '@/types';
+import userProfileService from '@/lib/userProfileService';
 
 export async function GET(
     request: NextRequest,
@@ -40,24 +41,19 @@ export async function GET(
                 );
 
                 if (distance <= 100) {
-                    // Fetch user profile
-                    const userProfileRef = doc(db, 'userProfiles', userData.userId);
-                    const userProfileSnapshot = await getDoc(userProfileRef);
+                    // Fetch user profile using the service
+                    const userProfile = await userProfileService.getUserProfile(userData.userId);
 
-                    if (userProfileSnapshot.exists()) {
-                        const profileData = userProfileSnapshot.data();
-                        users.push({
-                            id: userData.userId,
-                            name: profileData.name || 'Anonymous User',
-                            email: profileData.email || 'Anonymous',
-                            profilePictureUrl: profileData.profilePictureUrl || '',
-                            interests: profileData.interests || [],
-                            bio: profileData.bio || '',
-                            location: userData.location,
-                            joinedAt: userData.joinedAt?.toDate() || new Date(),
-                            isOnline: userData.isOnline,
+                    if (userProfile) {
+                        // Convert UserProfile to User
+                        const user = userProfileService.convertToUser(
+                            userProfile,
+                            userData.location,
                             distance
-                        });
+                        );
+                        user.joinedAt = userData.joinedAt?.toDate() || new Date();
+                        user.isOnline = userData.isOnline;
+                        users.push(user);
                     }
                 }
             }

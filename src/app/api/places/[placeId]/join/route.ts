@@ -54,13 +54,32 @@ export async function POST(
 
         // Add user to place
         const userRef = doc(db, 'places', placeId, 'users', userId);
-        await setDoc(userRef, {
+
+        // Check if this is the first time the user is joining this place
+        const existingUserDoc = await getDoc(userRef);
+        const isFirstTime = !existingUserDoc.exists();
+
+        const userData: {
+            userId: string;
+            location: { lat: number; lng: number };
+            joinedAt: ReturnType<typeof serverTimestamp>;
+            isOnline: boolean;
+            lastSeen: ReturnType<typeof serverTimestamp>;
+            firstJoinedAt?: ReturnType<typeof serverTimestamp>;
+        } = {
             userId,
             location: { lat, lng },
             joinedAt: serverTimestamp(),
             isOnline: true,
             lastSeen: serverTimestamp()
-        });
+        };
+
+        // Only set firstJoinedAt if this is the first time
+        if (isFirstTime) {
+            userData.firstJoinedAt = serverTimestamp();
+        }
+
+        await setDoc(userRef, userData, { merge: true });
 
         return NextResponse.json({
             success: true,

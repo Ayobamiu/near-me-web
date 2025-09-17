@@ -1,14 +1,12 @@
 import {
     collection,
     getDocs,
-    getDoc,
     doc,
     setDoc,
     updateDoc,
     serverTimestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { User } from '@/types';
 
 // Helper function to create a geohash for proximity queries
 // For now, we'll use a simple grid-based approach
@@ -225,51 +223,5 @@ export const removeUserFromPlace = async (placeId: string, userId: string) => {
     });
 };
 
-// Function to fetch user profiles and merge with place data
-export const fetchUsersWithProfiles = async (
-    placeId: string,
-    originLocation: { lat: number; lng: number }
-): Promise<User[]> => {
-    const usersRef = collection(db, "places", placeId, "users");
-    const usersSnapshot = await getDocs(usersRef);
-
-    const users: User[] = [];
-
-    for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data();
-
-        // Only process online users within range
-        if (userData.isOnline && !userData.outOfRange && userData.location) {
-            const distance = calculateDistance(
-                userData.location.lat,
-                userData.location.lng,
-                originLocation.lat,
-                originLocation.lng
-            );
-
-            if (distance <= 100) {
-                // Fetch user profile
-                const userProfileRef = doc(db, "profiles", userData.userId);
-                const userProfileSnapshot = await getDoc(userProfileRef);
-
-                if (userProfileSnapshot.exists()) {
-                    const profileData = userProfileSnapshot.data();
-                    users.push({
-                        id: userData.userId,
-                        name: profileData.name || "Anonymous User",
-                        email: profileData.email || "Anonymous",
-                        profilePictureUrl: profileData.profilePictureUrl || "",
-                        interests: profileData.interests || [],
-                        bio: profileData.bio || "",
-                        location: userData.location,
-                        joinedAt: userData.joinedAt?.toDate() || new Date(),
-                        isOnline: userData.isOnline,
-                        distance
-                    } as User);
-                }
-            }
-        }
-    }
-
-    return users;
-};
+// Note: fetchUsersWithProfiles function moved to API routes
+// This function is no longer used as we fetch users via API

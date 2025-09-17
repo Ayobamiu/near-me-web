@@ -72,7 +72,7 @@ export default function Home() {
       if (!userProfileDoc.exists()) {
         const userProfile = {
           id: user.uid,
-          name: user.displayName || "Anonymous User",
+          displayName: user.displayName || "Anonymous User",
           email: user.email || "anonymous@example.com",
           profilePictureUrl: user.photoURL || "",
           interests: [],

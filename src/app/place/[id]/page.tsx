@@ -16,12 +16,18 @@ import {
   leavePlace,
   createPlace,
 } from "@/lib/placeService";
+// import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
+import UserCard from "@/components/UserCard";
+import ProfileManager from "@/components/ProfileManager";
+import ProfileViewer from "@/components/ProfileViewer";
 import {
   doc,
   getDoc,
   onSnapshot,
   collection,
   setDoc,
+  updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,6 +53,10 @@ export default function PlacePage() {
   const [proximityCheckInterval, setProximityCheckInterval] =
     useState<NodeJS.Timeout | null>(null);
   const [isAlreadyJoined, setIsAlreadyJoined] = useState(false);
+  const [showProfileManager, setShowProfileManager] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isEditingRoomName, setIsEditingRoomName] = useState(false);
+  const [newRoomName, setNewRoomName] = useState("");
 
   const loadPlaceData = async () => {
     if (!user) return; // Early return if no user
@@ -216,6 +226,57 @@ export default function PlacePage() {
     loadPlaceData();
   };
 
+  const handleConnect = (userId: string) => {
+    // TODO: Implement connection request
+    console.log("Connect to user:", userId);
+    // For now, just show an alert
+    alert("Connection feature coming soon!");
+  };
+
+  const handleViewProfile = (user: User) => {
+    setSelectedUser(user);
+  };
+
+  const handleEditProfile = () => {
+    setShowProfileManager(true);
+  };
+
+  const handleEditRoomName = () => {
+    setNewRoomName(place?.name || "");
+    setIsEditingRoomName(true);
+  };
+
+  const handleSaveRoomName = async () => {
+    if (!place || !user || !newRoomName.trim()) return;
+
+    try {
+      // Check if user is the creator
+      if (place.createdBy !== user.uid) {
+        alert("Only the room creator can edit the room name");
+        return;
+      }
+
+      // Update room name in Firestore
+      const placeRef = doc(db, "places", placeId);
+      await updateDoc(placeRef, {
+        name: newRoomName.trim(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // Update local state
+      setPlace((prev) => (prev ? { ...prev, name: newRoomName.trim() } : null));
+      setIsEditingRoomName(false);
+    } catch (error) {
+      console.error("Error updating room name:", error);
+      alert("Failed to update room name. Please try again.");
+    }
+  };
+
+  const handleCancelEditRoomName = () => {
+    setIsEditingRoomName(false);
+    setNewRoomName("");
+  };
+
   // Function to start monitoring user proximity
   const startProximityMonitoring = () => {
     if (!user || !place?.originLocation) return;
@@ -288,7 +349,7 @@ export default function PlacePage() {
           // Create profile for anonymous users
           userProfile = {
             id: user.uid,
-            name: user.displayName || "Anonymous User",
+            displayName: user.displayName || "Anonymous User",
             email: user.email || "anonymous@example.com",
             profilePictureUrl: user.photoURL || "",
             interests: [],
@@ -361,7 +422,7 @@ export default function PlacePage() {
           // Create profile for anonymous users
           userProfile = {
             id: user.uid,
-            name: user.displayName || "Anonymous User",
+            displayName: user.displayName || "Anonymous User",
             email: user.email || "anonymous@example.com",
             profilePictureUrl: user.photoURL || "",
             interests: [],
@@ -549,7 +610,66 @@ export default function PlacePage() {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{place.name}</h1>
+              {isEditingRoomName ? (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={newRoomName}
+                    onChange={(e) => setNewRoomName(e.target.value)}
+                    className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-700 px-2 py-1"
+                    placeholder="Enter room name"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleSaveRoomName();
+                      } else if (e.key === "Escape") {
+                        handleCancelEditRoomName();
+                      }
+                    }}
+                  />
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={handleSaveRoomName}
+                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelEditRoomName}
+                      className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {place.name}
+                  </h1>
+                  {place.createdBy === user?.uid && (
+                    <button
+                      onClick={handleEditRoomName}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Edit room name"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="text-gray-600">QR Code: {place.qrCode}</p>
               {isFirstUser && (
                 <p className="text-sm text-blue-600 mt-1">
@@ -581,7 +701,7 @@ export default function PlacePage() {
 
               {/* User Profile Info */}
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
+                <div className="gap-4">
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
                       {user?.photoURL ? (
@@ -620,13 +740,22 @@ export default function PlacePage() {
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={signOut}
-                    className="ml-2 px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
-                    title="Sign Out"
-                  >
-                    Sign Out
-                  </button>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <button
+                      onClick={handleEditProfile}
+                      className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                      title="Edit Profile"
+                    >
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={signOut}
+                      className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
+                      title="Sign Out"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -758,72 +887,15 @@ export default function PlacePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {users.map((user) => (
-                      <div
-                        key={user.id}
-                        className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="relative">
-                          <img
-                            src={
-                              user.profilePictureUrl || "/default-avatar.png"
-                            }
-                            alt={user.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <div
-                            className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white ${
-                              user.isOnline ? "bg-green-500" : "bg-gray-400"
-                            }`}
-                          />
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">
-                              {user.name}
-                            </h3>
-                            <span className="text-xs text-gray-500">
-                              {user.isOnline ? "Online" : "Offline"}
-                            </span>
-                            {user.distance && (
-                              <span className="text-xs text-blue-600">
-                                {Math.round(user.distance)}m away
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-gray-600 truncate">
-                            {user.bio || "No bio available"}
-                          </p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {user.interests
-                              ?.slice(0, 3)
-                              .map((interest, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                                >
-                                  {interest}
-                                </span>
-                              ))}
-                            {user.interests && user.interests.length > 3 && (
-                              <span className="text-xs text-gray-500">
-                                +{user.interests.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex space-x-2">
-                          <button className="px-3 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded-full hover:bg-blue-200 transition-colors">
-                            Connect
-                          </button>
-                          <button className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-                            Chat
-                          </button>
-                        </div>
-                      </div>
+                  <div className="space-y-3">
+                    {users.map((userItem) => (
+                      <UserCard
+                        key={userItem.id}
+                        user={userItem}
+                        showConnectionButton={userItem.id !== user?.uid}
+                        onConnect={handleConnect}
+                        onViewProfile={handleViewProfile}
+                      />
                     ))}
                   </div>
                 )}
@@ -832,6 +904,25 @@ export default function PlacePage() {
           </div>
         </div>
       </div>
+
+      {/* Profile Manager Modal */}
+      {showProfileManager && (
+        <ProfileManager
+          onClose={() => setShowProfileManager(false)}
+          onSave={() => {
+            // Reload place data to get updated profiles
+            loadPlaceData();
+          }}
+        />
+      )}
+
+      {/* Profile Viewer Modal */}
+      {selectedUser && (
+        <ProfileViewer
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </div>
   );
 }

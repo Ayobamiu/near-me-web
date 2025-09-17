@@ -1,17 +1,29 @@
 export interface User {
     id: string;
-    name: string;
+    displayName: string;
     email: string;
     profilePictureUrl?: string;
     interests: string[];
+    headline?: string;
     bio?: string;
+    age?: number;
     location?: {
         lat: number;
         lng: number;
     };
+    occupation?: string;
+    socialLinks?: {
+        instagram?: string;
+        twitter?: string;
+        linkedin?: string;
+    };
+    isVisible?: boolean;
+    distanceRadius?: number;
     joinedAt: Date;
     isOnline: boolean;
     distance?: number; // Distance from place origin in meters
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export interface Place {

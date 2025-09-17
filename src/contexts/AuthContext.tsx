@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Create user profile in Firestore
       const userProfile = {
         id: userCredential.user.uid,
-        name: name,
+        displayName: name,
         email: email,
         profilePictureUrl: userCredential.user.photoURL || "",
         interests: [],
