@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { User, Connection } from "@/types";
 import ProfileViewer from "./ProfileViewer";
 import ConnectionRequestModal from "./ConnectionRequestModal";
+import ChatWindow from "./ChatWindow";
 import connectionService from "@/lib/connectionService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -23,6 +24,7 @@ export default function UserCard({
   const { user: currentUser } = useAuth();
   const [showProfileViewer, setShowProfileViewer] = useState(false);
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [showChatWindow, setShowChatWindow] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<Connection | null>(
     null
   );
@@ -65,6 +67,19 @@ export default function UserCard({
 
   const handleConnectionSuccess = () => {
     checkConnectionStatus();
+  };
+
+  const handleChat = () => {
+    setShowChatWindow(true);
+  };
+
+  const shouldShowChatButton = () => {
+    // Only show chat button for connected users
+    return (
+      currentUser &&
+      user.id !== currentUser.uid &&
+      connectionStatus?.status === "accepted"
+    );
   };
 
   const getConnectionButtonText = () => {
@@ -272,6 +287,14 @@ export default function UserCard({
               >
                 View Profile
               </button>
+              {shouldShowChatButton() && (
+                <button
+                  onClick={handleChat}
+                  className="text-xs text-white px-3 py-1 rounded-full bg-green-600 hover:bg-green-700 transition-colors"
+                >
+                  Chat
+                </button>
+              )}
               {showConnectionButton && shouldShowConnectButton() && (
                 <button
                   onClick={handleConnect}
@@ -305,6 +328,11 @@ export default function UserCard({
           onClose={() => setShowConnectionModal(false)}
           onSuccess={handleConnectionSuccess}
         />
+      )}
+
+      {/* Chat Window Modal */}
+      {showChatWindow && currentUser && (
+        <ChatWindow otherUser={user} onClose={() => setShowChatWindow(false)} />
       )}
     </>
   );

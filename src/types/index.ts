@@ -77,3 +77,47 @@ export interface UserConnection {
     connection: Connection;
     isIncoming: boolean; // true if this is a request TO the current user
 }
+
+export interface Message {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    receiverId: string;
+    content: string;
+    messageType: 'text' | 'emoji' | 'image' | 'file';
+    createdAt: Date;
+    updatedAt?: Date;
+    readAt?: Date;
+    isEdited?: boolean;
+    replyToMessageId?: string; // For threaded conversations
+}
+
+export interface Conversation {
+    id: string;
+    participantIds: string[]; // Array of user IDs in the conversation
+    lastMessage?: Message;
+    lastMessageAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    isActive: boolean;
+}
+
+export interface ChatMessage {
+    message: Message;
+    sender: User;
+    isFromCurrentUser: boolean;
+}
+
+export interface SendMessageRequest {
+    receiverId: string;
+    content: string;
+    messageType?: 'text' | 'emoji' | 'image' | 'file';
+    replyToMessageId?: string;
+}
+
+export interface ConversationSummary {
+    conversation: Conversation;
+    otherUser: User;
+    unreadCount: number;
+    lastMessagePreview: string;
+}

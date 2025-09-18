@@ -65,6 +65,35 @@ class UserProfileService {
         }
     }
 
+    // Get multiple user profiles by IDs
+    async getManyUserProfiles(userIds: string[]): Promise<UserProfile[]> {
+        try {
+            console.log('UserProfileService: Fetching profiles for users:', userIds);
+            const profiles: UserProfile[] = [];
+
+            // Use Promise.all to fetch all profiles concurrently
+            const profilePromises = userIds.map(async (userId) => {
+                const profile = await this.getUserProfile(userId);
+                return profile;
+            });
+
+            const results = await Promise.all(profilePromises);
+
+            // Filter out null profiles and add to results
+            results.forEach(profile => {
+                if (profile) {
+                    profiles.push(profile);
+                }
+            });
+
+            console.log('UserProfileService: Fetched profiles:', profiles.length);
+            return profiles;
+        } catch (error) {
+            console.error('UserProfileService: Error fetching multiple profiles:', error);
+            throw error;
+        }
+    }
+
     // Create or update user profile
     async updateUserProfile(userId: string, profileData: Partial<UserProfile>): Promise<void> {
         try {
