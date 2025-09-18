@@ -810,18 +810,42 @@ export default function PlacePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              {isEditingRoomName ? (
-                <div className="space-y-3">
+      {/* Discord-style Header */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => router.push("/")}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">
+                  {place.name.charAt(0)}
+                </span>
+              </div>
+              <div>
+                {isEditingRoomName ? (
                   <input
                     type="text"
                     value={newRoomName}
                     onChange={(e) => setNewRoomName(e.target.value)}
-                    className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-700 px-2 py-1"
+                    className="text-lg font-semibold text-gray-900 bg-transparent border-b border-blue-500 focus:outline-none focus:border-blue-700 px-1 py-0.5"
                     placeholder="Enter room name"
                     autoFocus
                     onKeyDown={(e) => {
@@ -832,25 +856,9 @@ export default function PlacePage() {
                       }
                     }}
                   />
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={handleSaveRoomName}
-                      className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={handleCancelEditRoomName}
-                      className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
+                ) : (
                   <div className="flex items-center space-x-2">
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-lg font-semibold text-gray-900">
                       {place.name}
                     </h1>
                     {place.createdBy === user?.uid && (
@@ -860,7 +868,7 @@ export default function PlacePage() {
                         title="Edit room name"
                       >
                         <svg
-                          className="w-5 h-5"
+                          className="w-4 h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -875,316 +883,280 @@ export default function PlacePage() {
                       </button>
                     )}
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center space-x-3">
-                    {/* Leave Place Button */}
-                    <button
-                      onClick={handleLeavePlace}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
-                      title="Leave this place"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 16l4-4m0 0l-4-4m4 4H3m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
-                      </svg>
-                      <span>Leave</span>
-                    </button>
-
-                    {/* Share Button */}
-                    <button
-                      onClick={() => setShowShareModal(true)}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                      title="Share this place"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                        />
-                      </svg>
-                      <span>Share</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-              <p className="text-gray-600">QR Code: {place.qrCode}</p>
-              {isFirstUser && (
-                <p className="text-sm text-blue-600 mt-1">
-                  🎉 You&apos;re the first person here! Your location will
-                  become the meeting point.
-                </p>
-              )}
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-500">Nearby People</p>
-              <p className="text-2xl font-bold text-blue-600">{users.length}</p>
-              <div className="flex space-x-2 mt-2">
-                <button
-                  onClick={() => setShowConnectionManager(true)}
-                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
-                >
-                  Connections
-                </button>
-                <button
-                  onClick={signOut}
-                  className="text-xs text-gray-500 hover:text-gray-700"
-                >
-                  Sign Out
-                </button>
+                )}
+                <p className="text-xs text-gray-500">QR: {place.qrCode}</p>
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Share place"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={handleLeavePlace}
+              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+              title="Leave place"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H3m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Sidebar - User Status */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm border p-6 sticky top-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Your Status
-              </h2>
+        {isEditingRoomName && (
+          <div className="flex justify-center space-x-2 mt-3">
+            <button
+              onClick={handleSaveRoomName}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+            >
+              Save
+            </button>
+            <button
+              onClick={handleCancelEditRoomName}
+              className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
 
-              {/* User Profile Info */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="gap-4">
-                  <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-                      {user?.photoURL ? (
-                        <img
-                          src={user.photoURL}
-                          alt={user.displayName || "User"}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to initial if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = "none";
-                            const parent = target.parentElement;
-                            if (parent) {
-                              parent.innerHTML = `<span class="text-blue-600 font-semibold text-sm">${
-                                user?.displayName?.charAt(0) ||
-                                user?.email?.charAt(0) ||
-                                "A"
-                              }</span>`;
-                            }
-                          }}
-                        />
-                      ) : (
-                        <span className="text-blue-600 font-semibold text-sm">
-                          {user?.displayName?.charAt(0) ||
-                            user?.email?.charAt(0) ||
-                            "A"}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {user?.displayName || "Anonymous User"}
-                      </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        {user?.email || "Anonymous"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <button
-                      onClick={handleEditProfile}
-                      className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-                      title="Edit Profile"
-                    >
-                      Edit Profile
-                    </button>
-                    <button
-                      onClick={signOut}
-                      className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200 rounded transition-colors"
-                      title="Sign Out"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
+      {/* WhatsApp-style Main Content */}
+      <div className="flex h-[calc(100vh-73px)]">
+        {/* Discord-style Sidebar */}
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+          {/* User Status Section */}
+          <div className="p-4 border-b border-gray-200">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+                {user?.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || "User"}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-blue-600 font-semibold text-sm">
+                    {user?.displayName?.charAt(0) ||
+                      user?.email?.charAt(0) ||
+                      "A"}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">
+                  {user?.displayName || "Anonymous User"}
+                </p>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Online</span>
                 </div>
               </div>
+            </div>
 
-              {/* Connection Counts */}
-              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">
-                  Your Connections
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {pendingConnectionsCount}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Pending Requests
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {activeConnectionsCount}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      Active Connections
-                    </div>
-                  </div>
+            {/* Status Messages */}
+            {!canJoin ? (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  <p className="text-sm text-red-700">
+                    Not within 100m of this place
+                  </p>
                 </div>
-                <button
-                  onClick={() => setShowConnectionManager(true)}
-                  className="w-full mt-3 px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Manage Connections
-                </button>
               </div>
-
-              {!canJoin ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg
-                      className="w-8 h-8 text-red-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    You&apos;re not within 100m of this place
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Move closer to the origin location to join
-                  </p>
+            ) : isAlreadyJoined ? (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <p className="text-sm text-green-700">Joined this place</p>
                 </div>
-              ) : isAlreadyJoined ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg
-                      className="w-8 h-8 text-blue-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
-                    You&apos;re already in this place!
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    You can see other nearby people below
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg
-                      className="w-8 h-8 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">
+              </div>
+            ) : (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  <p className="text-sm text-blue-700">
                     {isFirstUser
                       ? "Ready to create place!"
-                      : "You&apos;re within range!"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    You&apos;re automatically joined to this place!
+                      : "Within range - auto-joined!"}
                   </p>
                 </div>
-              )}
+              </div>
+            )}
+          </div>
+
+          {/* Stats Section */}
+          <div className="p-4 border-b border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">
+              Activity
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">People Nearby</span>
+                <span className="text-sm font-semibold text-blue-600">
+                  {users.length}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Pending Requests</span>
+                <span className="text-sm font-semibold text-orange-600">
+                  {pendingConnectionsCount}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">
+                  Active Connections
+                </span>
+                <span className="text-sm font-semibold text-green-600">
+                  {activeConnectionsCount}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Main Content - Group Members */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm border">
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  Nearby People
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {users.length} people within 100m of this location
+          {/* Actions */}
+          <div className="p-4 space-y-2">
+            <button
+              onClick={() => setShowConnectionManager(true)}
+              className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Manage Connections
+            </button>
+            <button
+              onClick={handleEditProfile}
+              className="w-full px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Edit Profile
+            </button>
+            <button
+              onClick={signOut}
+              className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+
+        {/* WhatsApp-style Main Area */}
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="bg-white border-b border-gray-200 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Nearby People
+              </h2>
+              <span className="text-sm text-gray-500">
+                {users.length} people within 100m
+              </span>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            {users.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <svg
+                    className="w-10 h-10 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {isFirstUser
+                    ? "Be the first to create this place!"
+                    : "No one else is here yet"}
+                </h3>
+                <p className="text-gray-500 max-w-sm">
+                  {isFirstUser
+                    ? "Your location will become the meeting point for others to join"
+                    : "Be the first to join this place and start connecting with people nearby!"}
                 </p>
               </div>
-
-              <div className="p-6">
-                {users.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg
-                        className="w-8 h-8 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-gray-500">
-                      {isFirstUser
-                        ? "Be the first to create this place!"
-                        : "No one else is here yet"}
-                    </p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      {isFirstUser
-                        ? "Your location will become the meeting point"
-                        : "Be the first to join this place!"}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {users.map((userItem) => (
-                      <UserCard
-                        key={userItem.id}
-                        user={userItem}
-                        showConnectionButton={userItem.id !== user?.uid}
-                        onViewProfile={handleViewProfile}
-                      />
-                    ))}
-                  </div>
-                )}
+            ) : (
+              <div className="p-4 space-y-2">
+                {users.map((userItem) => (
+                  <UserCard
+                    key={userItem.id}
+                    user={userItem}
+                    showConnectionButton={userItem.id !== user?.uid}
+                    onViewProfile={handleViewProfile}
+                  />
+                ))}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
