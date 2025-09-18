@@ -35,8 +35,23 @@ export default function QRScanner({ onScan, onError }: QRScannerProps) {
             videoRef.current,
             (result, error) => {
               if (result) {
+                const scannedText = result.getText();
+                console.log("QR Code scanned:", scannedText);
+
+                // Check if it's a profile URL
+                if (scannedText.includes("/profile/")) {
+                  // Extract user ID from profile URL
+                  const userId = scannedText.split("/profile/")[1];
+                  if (userId) {
+                    // Navigate to profile page
+                    window.location.href = `/profile/${userId}`;
+                    return;
+                  }
+                }
+
+                // For other QR codes (like place codes), use the original handler
                 setIsScanning(false);
-                onScan(result.getText());
+                onScan(scannedText);
               }
               if (error && error.name !== "NotFoundException") {
                 console.error("QR Scan error:", error);

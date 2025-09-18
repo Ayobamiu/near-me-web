@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import QRScanner from "@/components/QRScanner";
+import QRBadge from "@/components/QRBadge";
 import { getCurrentPosition } from "@/lib/geolocation";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginForm from "@/components/LoginForm";
@@ -15,10 +16,48 @@ export default function Home() {
   const { user, loading, signOut } = useAuth();
   const [qrCode, setQrCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
+  const [showQRBadge, setShowQRBadge] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
+  const [showConnectionIntent, setShowConnectionIntent] = useState(false);
+  const [connectionIntent, setConnectionIntent] = useState<any>(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const router = useRouter();
+
+  // Check for connection intent after login
+  useEffect(() => {
+    if (user && !loading) {
+      const intent = localStorage.getItem("nearme_connection_intent");
+      if (intent) {
+        try {
+          const parsedIntent = JSON.parse(intent);
+          // Check if intent is recent (within 10 minutes)
+          if (Date.now() - parsedIntent.timestamp < 10 * 60 * 1000) {
+            setConnectionIntent(parsedIntent);
+            setShowConnectionIntent(true);
+          }
+          // Clear the intent regardless
+          localStorage.removeItem("nearme_connection_intent");
+        } catch (error) {
+          console.error("Error parsing connection intent:", error);
+          localStorage.removeItem("nearme_connection_intent");
+        }
+      }
+    }
+  }, [user, loading]);
+
+  // Check for success message in URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("connectionSent") === "true") {
+      setShowSuccessMessage(true);
+      // Clean up URL
+      window.history.replaceState({}, "", "/");
+      // Auto-hide after 5 seconds
+      setTimeout(() => setShowSuccessMessage(false), 5000);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -187,6 +226,13 @@ export default function Home() {
           {!isScanning ? (
             <div className="space-y-4">
               <button
+                onClick={() => setShowQRBadge(true)}
+                className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                My QR Badge
+              </button>
+
+              <button
                 onClick={() => setIsScanning(true)}
                 className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
@@ -285,6 +331,62 @@ export default function Home() {
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>Make sure location access is enabled in your browser</p>
         </div>
+
+        {showQRBadge && <QRBadge onClose={() => setShowQRBadge(false)} />}
+
+        {/* Success Message Banner */}
+        {showSuccessMessage && (
+          <div className="fixed top-4 left-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg z-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="text-2xl mr-3">✅</div>
+                <div>
+                  <h3 className="font-semibold">Connection Request Sent!</h3>
+                  <p className="text-sm opacity-90">
+                    They'll be notified and can respond to your request.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSuccessMessage(false)}
+                className="text-white hover:text-gray-200"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Connection Intent Banner */}
+        {showConnectionIntent && connectionIntent && (
+          <div className="fixed top-4 left-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Continue Connection Request</h3>
+                <p className="text-sm opacity-90">
+                  You wanted to connect with {connectionIntent.targetUserName}
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    router.push(`/profile/${connectionIntent.targetUserId}`);
+                    setShowConnectionIntent(false);
+                  }}
+                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-gray-100 font-medium"
+                >
+                  Continue
+                </button>
+                <button
+                  onClick={() => setShowConnectionIntent(false)}
+                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -19,8 +19,25 @@ export default function ConnectionRequestModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
+  console.log("ConnectionRequestModal rendering", { user, currentUser });
+
   const handleSendRequest = async () => {
-    if (!user.id || !currentUser) return;
+    if (!user.id) return;
+
+    if (!currentUser) {
+      // Store the intent to return after login
+      localStorage.setItem(
+        "nearme_connection_intent",
+        JSON.stringify({
+          targetUserId: user.id,
+          targetUserName: user.displayName,
+          timestamp: Date.now(),
+        })
+      );
+      // Redirect to login page
+      window.location.href = "/";
+      return;
+    }
 
     setIsLoading(true);
     setError("");
@@ -47,11 +64,14 @@ export default function ConnectionRequestModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]"
+      style={{ zIndex: 9999 }}
+    >
       <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">
-            Send Connection Request
+            {currentUser ? "Send Connection Request" : "Sign In Required"}
           </h3>
           <button
             onClick={onClose}
@@ -107,26 +127,34 @@ export default function ConnectionRequestModal({
           </div>
         </div>
 
-        <div className="mb-4">
-          <label
-            htmlFor="message"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Message (Optional)
-          </label>
-          <textarea
-            id="message"
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Add a personal message..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-            rows={3}
-            maxLength={200}
-          />
-          <p className="text-xs text-gray-500 mt-1">
-            {message.length}/200 characters
-          </p>
-        </div>
+        {currentUser ? (
+          <div className="mb-4">
+            <label
+              htmlFor="message"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Message (Optional)
+            </label>
+            <textarea
+              id="message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Add a personal message..."
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              rows={3}
+              maxLength={200}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {message.length}/200 characters
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              You need to sign in to send connection requests.
+            </p>
+          </div>
+        )}
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
@@ -147,7 +175,11 @@ export default function ConnectionRequestModal({
             disabled={isLoading}
             className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isLoading ? "Sending..." : "Send Request"}
+            {isLoading
+              ? "Sending..."
+              : currentUser
+              ? "Send Request"
+              : "Go to Sign In"}
           </button>
         </div>
       </div>
