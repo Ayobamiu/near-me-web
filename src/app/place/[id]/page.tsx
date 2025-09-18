@@ -813,10 +813,10 @@ export default function PlacePage() {
       {/* Discord-style Header */}
       <div className="bg-white border-b border-gray-200 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-3 min-w-0 flex-1">
             <button
               onClick={() => router.push("/")}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
             >
               <svg
                 className="w-5 h-5"
@@ -833,19 +833,19 @@ export default function PlacePage() {
               </svg>
             </button>
 
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                 <span className="text-white font-bold text-sm">
                   {place.name.charAt(0)}
                 </span>
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 {isEditingRoomName ? (
                   <input
                     type="text"
                     value={newRoomName}
                     onChange={(e) => setNewRoomName(e.target.value)}
-                    className="text-lg font-semibold text-gray-900 bg-transparent border-b border-blue-500 focus:outline-none focus:border-blue-700 px-1 py-0.5"
+                    className="text-lg font-semibold text-gray-900 bg-transparent border-b border-blue-500 focus:outline-none focus:border-blue-700 px-1 py-0.5 w-full"
                     placeholder="Enter room name"
                     autoFocus
                     onKeyDown={(e) => {
@@ -857,14 +857,14 @@ export default function PlacePage() {
                     }}
                   />
                 ) : (
-                  <div className="flex items-center space-x-2">
-                    <h1 className="text-lg font-semibold text-gray-900">
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <h1 className="text-lg font-semibold text-gray-900 truncate">
                       {place.name}
                     </h1>
                     {place.createdBy === user?.uid && (
                       <button
                         onClick={handleEditRoomName}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
                         title="Edit room name"
                       >
                         <svg
@@ -884,12 +884,14 @@ export default function PlacePage() {
                     )}
                   </div>
                 )}
-                <p className="text-xs text-gray-500">QR: {place.qrCode}</p>
+                <p className="text-xs text-gray-500 truncate">
+                  QR: {place.qrCode}
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 flex-shrink-0">
             <button
               onClick={() => setShowShareModal(true)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -951,8 +953,8 @@ export default function PlacePage() {
 
       {/* WhatsApp-style Main Content */}
       <div className="flex h-[calc(100vh-73px)]">
-        {/* Discord-style Sidebar */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        {/* Discord-style Sidebar - Hidden on mobile */}
+        <div className="hidden lg:flex lg:w-80 bg-white border-r border-gray-200 flex-col">
           {/* User Status Section */}
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center space-x-3 mb-4">
@@ -1108,7 +1110,145 @@ export default function PlacePage() {
         </div>
 
         {/* WhatsApp-style Main Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col w-full lg:w-auto">
+          {/* Mobile Status Section - Only visible on mobile */}
+          <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+                  {user?.photoURL ? (
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName || "User"}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-blue-600 font-semibold text-sm">
+                      {user?.displayName?.charAt(0) ||
+                        user?.email?.charAt(0) ||
+                        "A"}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {user?.displayName || "Anonymous User"}
+                  </p>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs text-gray-500">Online</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => router.push("/chat")}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Messages"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowConnectionManager(true)}
+                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Connections"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Status Messages */}
+            {!canJoin ? (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                    />
+                  </svg>
+                  <p className="text-sm text-red-700">
+                    Not within 100m of this place
+                  </p>
+                </div>
+              </div>
+            ) : isAlreadyJoined ? (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  <p className="text-sm text-green-700">Joined this place</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <svg
+                    className="w-4 h-4 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  <p className="text-sm text-blue-700">
+                    {isFirstUser
+                      ? "Ready to create place!"
+                      : "Within range - auto-joined!"}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Header */}
           <div className="bg-white border-b border-gray-200 px-4 py-3">
             <div className="flex items-center justify-between">
@@ -1152,7 +1292,7 @@ export default function PlacePage() {
                 </p>
               </div>
             ) : (
-              <div className="p-4 space-y-2">
+              <div className="p-2 lg:p-4 space-y-2">
                 {users.map((userItem) => (
                   <UserCard
                     key={userItem.id}
