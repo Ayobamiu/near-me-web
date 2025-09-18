@@ -22,6 +22,7 @@ import UserCard from "@/components/UserCard";
 import ProfileManager from "@/components/ProfileManager";
 import ProfileViewer from "@/components/ProfileViewer";
 import ConnectionManager from "@/components/ConnectionManager";
+import PlaceShareModal from "@/components/PlaceShareModal";
 import {
   doc,
   getDoc,
@@ -62,6 +63,7 @@ export default function PlacePage() {
   const [showConnectionManager, setShowConnectionManager] = useState(false);
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const [activeConnectionsCount, setActiveConnectionsCount] = useState(0);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const loadConnectionCounts = async () => {
     if (!user) return;
@@ -86,15 +88,16 @@ export default function PlacePage() {
   };
 
   const loadPlaceData = async () => {
-    if (!user) return; // Early return if no user
-
     try {
       setIsLoading(true);
       setGeolocationError(null);
 
-      // Get user's current location first
-      const position = await getCurrentPosition();
-      setUserLocation({ lat: position.lat, lng: position.lng });
+      // Get user's current location first (only if user is authenticated)
+      let position = null;
+      if (user) {
+        position = await getCurrentPosition();
+        setUserLocation({ lat: position.lat, lng: position.lng });
+      }
 
       // Check if place exists
       const placeRef = doc(db, "places", placeId);
@@ -118,54 +121,61 @@ export default function PlacePage() {
         // console.log("🏠 Place data:", placeData);
         setPlace(placeData);
 
-        // Check if user is already in this place
-        const userInPlaceRef = doc(db, "places", placeId, "users", user.uid);
-        const userInPlaceSnapshot = await getDoc(userInPlaceRef);
+        // Check if user is already in this place (only if user is authenticated)
+        if (user) {
+          const userInPlaceRef = doc(db, "places", placeId, "users", user.uid);
+          const userInPlaceSnapshot = await getDoc(userInPlaceRef);
 
-        if (userInPlaceSnapshot.exists()) {
-          const userData = userInPlaceSnapshot.data();
-          // console.log("🔍 User in place data:", userData);
-          if (userData.isOnline && !userData.outOfRange) {
-            // User is already joined and online
-            console.log("✅ Setting isAlreadyJoined to true");
-            setIsAlreadyJoined(true);
-            setCanJoin(true);
-            setUserLocation({ lat: position.lat, lng: position.lng });
-            console.log("✅ User already joined this place");
+          if (userInPlaceSnapshot.exists()) {
+            const userData = userInPlaceSnapshot.data();
+            // console.log("🔍 User in place data:", userData);
+            if (userData.isOnline && !userData.outOfRange) {
+              // User is already joined and online
+              console.log("✅ Setting isAlreadyJoined to true");
+              setIsAlreadyJoined(true);
+              setCanJoin(true);
+              if (position) {
+                setUserLocation({ lat: position.lat, lng: position.lng });
+              }
+              console.log("✅ User already joined this place");
 
-            // Set up real-time listener for already joined users
-            onSnapshot(
-              collection(db, "places", placeId, "users"),
-              async (snapshot) => {
-                console.log(
-                  "📡 Already joined - Real-time update received:",
-                  snapshot.size,
-                  "users"
-                );
+              // Set up real-time listener for already joined users
+              onSnapshot(
+                collection(db, "places", placeId, "users"),
+                async (snapshot) => {
+                  console.log(
+                    "📡 Already joined - Real-time update received:",
+                    snapshot.size,
+                    "users"
+                  );
 
-                if (placeData.originLocation) {
-                  try {
-                    // Fetch users with their profiles via API
-                    const response = await getPlaceUsers(
-                      placeId,
-                      placeData.originLocation.lat,
-                      placeData.originLocation.lng
-                    );
-                    setUsers(response.users);
-                  } catch (error) {
-                    console.error("Error fetching users:", error);
+                  if (placeData.originLocation) {
+                    try {
+                      // Fetch users with their profiles via API
+                      const response = await getPlaceUsers(
+                        placeId,
+                        placeData.originLocation.lat,
+                        placeData.originLocation.lng
+                      );
+                      setUsers(response.users);
+                    } catch (error) {
+                      console.error("Error fetching users:", error);
+                    }
                   }
                 }
-              }
-            );
+              );
 
-            // Start proximity monitoring for already joined users
-            startProximityMonitoring();
-            return; // Exit early since user is already joined
+              // Start proximity monitoring for already joined users
+              startProximityMonitoring();
+              return; // Exit early since user is already joined
+            }
           }
+        } else {
+          // For non-authenticated users, just set the place and allow viewing
+          setCanJoin(false); // They can't join without being authenticated
         }
 
-        if (placeData.originLocation) {
+        if (placeData.originLocation && position) {
           const distance = calculateDistance(
             position.lat,
             position.lng,
@@ -232,11 +242,25 @@ export default function PlacePage() {
   };
 
   useEffect(() => {
-    if (user && !authLoading) {
+    if (!authLoading) {
       loadPlaceData();
-      loadConnectionCounts();
+      if (user) {
+        loadConnectionCounts();
+      }
     }
   }, [placeId, user, authLoading]);
+
+  // Store place join intent for non-authenticated users
+  useEffect(() => {
+    if (!user && place) {
+      const intent = {
+        placeId: place.id,
+        placeName: place.name,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem("nearme_place_intent", JSON.stringify(intent));
+    }
+  }, [user, place]);
 
   // Cleanup on component unmount
   useEffect(() => {
@@ -666,31 +690,55 @@ export default function PlacePage() {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center space-x-2">
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {place.name}
-                  </h1>
-                  {place.createdBy === user?.uid && (
-                    <button
-                      onClick={handleEditRoomName}
-                      className="text-gray-400 hover:text-gray-600 transition-colors"
-                      title="Edit room name"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <h1 className="text-2xl font-bold text-gray-900">
+                      {place.name}
+                    </h1>
+                    {place.createdBy === user?.uid && (
+                      <button
+                        onClick={handleEditRoomName}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        title="Edit room name"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                        />
-                      </svg>
-                    </button>
-                  )}
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Share Button */}
+                  <button
+                    onClick={() => setShowShareModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                    title="Share this place"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                      />
+                    </svg>
+                    <span>Share</span>
+                  </button>
                 </div>
               )}
               <p className="text-gray-600">QR Code: {place.qrCode}</p>
@@ -988,6 +1036,14 @@ export default function PlacePage() {
       {/* Connection Manager Modal */}
       {showConnectionManager && (
         <ConnectionManager onClose={handleConnectionManagerClose} />
+      )}
+
+      {/* Place Share Modal */}
+      {showShareModal && place && (
+        <PlaceShareModal
+          place={place}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );

@@ -21,8 +21,18 @@ export default function Home() {
   const [error, setError] = useState("");
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
   const [showConnectionIntent, setShowConnectionIntent] = useState(false);
-  const [connectionIntent, setConnectionIntent] = useState<any>(null);
+  const [connectionIntent, setConnectionIntent] = useState<{
+    targetUserId: string;
+    targetUserName: string;
+    timestamp: number;
+  } | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showPlaceIntent, setShowPlaceIntent] = useState(false);
+  const [placeIntent, setPlaceIntent] = useState<{
+    placeId: string;
+    placeName: string;
+    timestamp: number;
+  } | null>(null);
   const router = useRouter();
 
   // Check for connection intent after login
@@ -42,6 +52,24 @@ export default function Home() {
         } catch (error) {
           console.error("Error parsing connection intent:", error);
           localStorage.removeItem("nearme_connection_intent");
+        }
+      }
+
+      // Check for place join intent
+      const placeIntent = localStorage.getItem("nearme_place_intent");
+      if (placeIntent) {
+        try {
+          const parsedPlaceIntent = JSON.parse(placeIntent);
+          // Check if intent is recent (within 10 minutes)
+          if (Date.now() - parsedPlaceIntent.timestamp < 10 * 60 * 1000) {
+            setPlaceIntent(parsedPlaceIntent);
+            setShowPlaceIntent(true);
+          }
+          // Clear the intent regardless
+          localStorage.removeItem("nearme_place_intent");
+        } catch (error) {
+          console.error("Error parsing place intent:", error);
+          localStorage.removeItem("nearme_place_intent");
         }
       }
     }
@@ -162,6 +190,155 @@ export default function Home() {
     }
   };
 
+  // Show intent experiences as full-screen overlays
+  // Give priority to connection success message over place intent
+  if (showSuccessMessage) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-md mx-auto px-4 py-8">
+          {/* Success Message */}
+          {showSuccessMessage && (
+            <div className="fixed top-4 left-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg z-50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="text-2xl mr-3">✅</div>
+                  <div>
+                    <h3 className="font-semibold">Connection Request Sent!</h3>
+                    <p className="text-sm opacity-90">
+                      They&apos;ll be notified and can respond to your request.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSuccessMessage(false)}
+                  className="text-white hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (showPlaceIntent && placeIntent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg
+                className="w-10 h-10 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </div>
+
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Ready to join?
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              You wanted to join{" "}
+              <span className="font-semibold text-green-600">
+                {placeIntent.placeName}
+              </span>
+            </p>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => {
+                  router.push(`/place/${placeIntent.placeId}`);
+                  setShowPlaceIntent(false);
+                }}
+                className="w-full py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold text-lg transition-colors shadow-lg"
+              >
+                Join Place Now
+              </button>
+
+              <button
+                onClick={() => setShowPlaceIntent(false)}
+                className="w-full py-3 text-gray-500 hover:text-gray-700 font-medium transition-colors"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showConnectionIntent && connectionIntent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
+            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg
+                className="w-10 h-10 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                />
+              </svg>
+            </div>
+
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Ready to connect?
+            </h1>
+            <p className="text-lg text-gray-600 mb-8">
+              You wanted to connect with{" "}
+              <span className="font-semibold text-blue-600">
+                {connectionIntent.targetUserName}
+              </span>
+            </p>
+
+            <div className="space-y-4">
+              <button
+                onClick={() => {
+                  router.push(`/profile/${connectionIntent.targetUserId}`);
+                  setShowConnectionIntent(false);
+                }}
+                className="w-full py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-lg transition-colors shadow-lg"
+              >
+                Continue Request
+              </button>
+
+              <button
+                onClick={() => setShowConnectionIntent(false)}
+                className="w-full py-3 text-gray-500 hover:text-gray-700 font-medium transition-colors"
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-md mx-auto px-4 py-8">
@@ -237,6 +414,31 @@ export default function Home() {
                 className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Scan QR Code
+              </button>
+
+              <button
+                onClick={() => {
+                  // For now, show a placeholder - in real app, this would get current place
+                  alert(
+                    "Share feature coming soon! This will share your current place."
+                  );
+                }}
+                className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
+              >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                  />
+                </svg>
+                Share Current Place
               </button>
 
               <div className="relative">
@@ -333,60 +535,6 @@ export default function Home() {
         </div>
 
         {showQRBadge && <QRBadge onClose={() => setShowQRBadge(false)} />}
-
-        {/* Success Message Banner */}
-        {showSuccessMessage && (
-          <div className="fixed top-4 left-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg z-50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="text-2xl mr-3">✅</div>
-                <div>
-                  <h3 className="font-semibold">Connection Request Sent!</h3>
-                  <p className="text-sm opacity-90">
-                    They'll be notified and can respond to your request.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSuccessMessage(false)}
-                className="text-white hover:text-gray-200"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Connection Intent Banner */}
-        {showConnectionIntent && connectionIntent && (
-          <div className="fixed top-4 left-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">Continue Connection Request</h3>
-                <p className="text-sm opacity-90">
-                  You wanted to connect with {connectionIntent.targetUserName}
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => {
-                    router.push(`/profile/${connectionIntent.targetUserId}`);
-                    setShowConnectionIntent(false);
-                  }}
-                  className="px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-gray-100 font-medium"
-                >
-                  Continue
-                </button>
-                <button
-                  onClick={() => setShowConnectionIntent(false)}
-                  className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
