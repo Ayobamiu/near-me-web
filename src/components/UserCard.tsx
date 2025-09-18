@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { User } from "@/types";
+import { useState, useEffect } from "react";
+import { User, Connection } from "@/types";
 import ProfileViewer from "./ProfileViewer";
+import ConnectionRequestModal from "./ConnectionRequestModal";
+import connectionService from "@/lib/connectionService";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UserCardProps {
   user: User;
@@ -17,10 +20,39 @@ export default function UserCard({
   onConnect,
   onViewProfile,
 }: UserCardProps) {
+  const { user: currentUser } = useAuth();
   const [showProfileViewer, setShowProfileViewer] = useState(false);
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<Connection | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (currentUser && user.id !== currentUser.uid) {
+      checkConnectionStatus();
+    }
+  }, [currentUser, user.id]);
+
+  const checkConnectionStatus = async () => {
+    if (!currentUser) return;
+
+    try {
+      const connection = await connectionService.getConnectionStatus(
+        currentUser.uid,
+        user.id
+      );
+      setConnectionStatus(connection);
+    } catch (error) {
+      console.error("Error checking connection status:", error);
+    }
+  };
 
   const handleConnect = () => {
-    onConnect?.(user.id);
+    if (onConnect) {
+      onConnect(user.id);
+    } else {
+      setShowConnectionModal(true);
+    }
   };
 
   const handleViewProfile = () => {
@@ -29,6 +61,98 @@ export default function UserCard({
     } else {
       setShowProfileViewer(true);
     }
+  };
+
+  const handleConnectionSuccess = () => {
+    checkConnectionStatus();
+  };
+
+  const getConnectionButtonText = () => {
+    if (!connectionStatus) return "Connect";
+
+    switch (connectionStatus.status) {
+      case "pending":
+        return connectionStatus.userId === currentUser?.uid
+          ? "Pending"
+          : "Respond";
+      case "accepted":
+        return "Connected";
+      case "rejected":
+        return "Connect";
+      default:
+        return "Connect";
+    }
+  };
+
+  const getConnectionStatusText = () => {
+    if (!currentUser || user.id === currentUser.uid) {
+      return null; // Don't show status for own profile
+    }
+
+    // Show if user is not visible
+    if (user.isVisible === false) {
+      return "Profile not visible";
+    }
+
+    if (!connectionStatus) {
+      return null; // No connection status yet
+    }
+
+    switch (connectionStatus.status) {
+      case "accepted":
+        return "Connected";
+      case "pending":
+        return connectionStatus.userId === currentUser.uid
+          ? "Request sent"
+          : "Wants to connect";
+      case "rejected":
+        return "Connection declined";
+      default:
+        return null;
+    }
+  };
+
+  const getConnectionButtonStyle = () => {
+    if (!connectionStatus) return "bg-blue-600 hover:bg-blue-700";
+
+    switch (connectionStatus.status) {
+      case "pending":
+        return connectionStatus.userId === currentUser?.uid
+          ? "bg-yellow-600 hover:bg-yellow-700"
+          : "bg-green-600 hover:bg-green-700";
+      case "accepted":
+        return "bg-green-600 hover:bg-green-700";
+      case "rejected":
+        return "bg-blue-600 hover:bg-blue-700";
+      default:
+        return "bg-blue-600 hover:bg-blue-700";
+    }
+  };
+
+  const shouldShowConnectButton = () => {
+    // Don't show connect button for own profile
+    if (!currentUser || user.id === currentUser.uid) {
+      return false;
+    }
+
+    // Don't show connect button if already connected
+    if (connectionStatus?.status === "accepted") {
+      return false;
+    }
+
+    // Don't show connect button if user is not visible
+    if (user.isVisible === false) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const isConnectionDisabled = () => {
+    return (
+      connectionStatus?.status === "pending" &&
+      connectionStatus.userId === currentUser?.uid
+    );
   };
 
   return (
@@ -82,6 +206,21 @@ export default function UserCard({
                     {Math.round(user.distance)}m away
                   </p>
                 )}
+                {getConnectionStatusText() && (
+                  <p
+                    className={`text-xs mt-1 font-medium ${
+                      getConnectionStatusText() === "Connected"
+                        ? "text-green-600"
+                        : getConnectionStatusText() === "Profile not visible"
+                        ? "text-gray-500"
+                        : getConnectionStatusText() === "Connection declined"
+                        ? "text-red-500"
+                        : "text-blue-600"
+                    }`}
+                  >
+                    {getConnectionStatusText()}
+                  </p>
+                )}
               </div>
 
               {/* Online Status */}
@@ -133,12 +272,17 @@ export default function UserCard({
               >
                 View Profile
               </button>
-              {showConnectionButton && (
+              {showConnectionButton && shouldShowConnectButton() && (
                 <button
                   onClick={handleConnect}
-                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded-full hover:bg-blue-700 transition-colors"
+                  disabled={isConnectionDisabled()}
+                  className={`text-xs text-white px-3 py-1 rounded-full transition-colors ${
+                    isConnectionDisabled()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : getConnectionButtonStyle()
+                  }`}
                 >
-                  Connect
+                  {getConnectionButtonText()}
                 </button>
               )}
             </div>
@@ -151,6 +295,15 @@ export default function UserCard({
         <ProfileViewer
           user={user}
           onClose={() => setShowProfileViewer(false)}
+        />
+      )}
+
+      {/* Connection Request Modal */}
+      {showConnectionModal && currentUser && (
+        <ConnectionRequestModal
+          user={user}
+          onClose={() => setShowConnectionModal(false)}
+          onSuccess={handleConnectionSuccess}
         />
       )}
     </>

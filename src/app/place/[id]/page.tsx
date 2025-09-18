@@ -16,10 +16,12 @@ import {
   leavePlace,
   createPlace,
 } from "@/lib/placeService";
+import connectionService from "@/lib/connectionService";
 // import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
 import UserCard from "@/components/UserCard";
 import ProfileManager from "@/components/ProfileManager";
 import ProfileViewer from "@/components/ProfileViewer";
+import ConnectionManager from "@/components/ConnectionManager";
 import {
   doc,
   getDoc,
@@ -57,6 +59,31 @@ export default function PlacePage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isEditingRoomName, setIsEditingRoomName] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
+  const [showConnectionManager, setShowConnectionManager] = useState(false);
+  const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
+  const [activeConnectionsCount, setActiveConnectionsCount] = useState(0);
+
+  const loadConnectionCounts = async () => {
+    if (!user) return;
+
+    try {
+      const [pendingConnections, acceptedConnections] = await Promise.all([
+        connectionService.getPendingConnections(user.uid),
+        connectionService.getAcceptedConnections(user.uid),
+      ]);
+
+      setPendingConnectionsCount(pendingConnections.length);
+      setActiveConnectionsCount(acceptedConnections.length);
+    } catch (error) {
+      console.error("Error loading connection counts:", error);
+    }
+  };
+
+  const handleConnectionManagerClose = () => {
+    setShowConnectionManager(false);
+    // Refresh connection counts when manager closes
+    loadConnectionCounts();
+  };
 
   const loadPlaceData = async () => {
     if (!user) return; // Early return if no user
@@ -207,6 +234,7 @@ export default function PlacePage() {
   useEffect(() => {
     if (user && !authLoading) {
       loadPlaceData();
+      loadConnectionCounts();
     }
   }, [placeId, user, authLoading]);
 
@@ -226,12 +254,7 @@ export default function PlacePage() {
     loadPlaceData();
   };
 
-  const handleConnect = (userId: string) => {
-    // TODO: Implement connection request
-    console.log("Connect to user:", userId);
-    // For now, just show an alert
-    alert("Connection feature coming soon!");
-  };
+  // Connection handling is now done internally by UserCard component
 
   const handleViewProfile = (user: User) => {
     setSelectedUser(user);
@@ -681,12 +704,20 @@ export default function PlacePage() {
             <div className="text-right">
               <p className="text-sm text-gray-500">Nearby People</p>
               <p className="text-2xl font-bold text-blue-600">{users.length}</p>
-              <button
-                onClick={signOut}
-                className="mt-2 text-xs text-gray-500 hover:text-gray-700"
-              >
-                Sign Out
-              </button>
+              <div className="flex space-x-2 mt-2">
+                <button
+                  onClick={() => setShowConnectionManager(true)}
+                  className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors"
+                >
+                  Connections
+                </button>
+                <button
+                  onClick={signOut}
+                  className="text-xs text-gray-500 hover:text-gray-700"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -757,6 +788,37 @@ export default function PlacePage() {
                     </button>
                   </div>
                 </div>
+              </div>
+
+              {/* Connection Counts */}
+              <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  Your Connections
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {pendingConnectionsCount}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Pending Requests
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {activeConnectionsCount}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Active Connections
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowConnectionManager(true)}
+                  className="w-full mt-3 px-3 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Manage Connections
+                </button>
               </div>
 
               {!canJoin ? (
@@ -893,7 +955,6 @@ export default function PlacePage() {
                         key={userItem.id}
                         user={userItem}
                         showConnectionButton={userItem.id !== user?.uid}
-                        onConnect={handleConnect}
                         onViewProfile={handleViewProfile}
                       />
                     ))}
@@ -922,6 +983,11 @@ export default function PlacePage() {
           user={selectedUser}
           onClose={() => setSelectedUser(null)}
         />
+      )}
+
+      {/* Connection Manager Modal */}
+      {showConnectionManager && (
+        <ConnectionManager onClose={handleConnectionManagerClose} />
       )}
     </div>
   );

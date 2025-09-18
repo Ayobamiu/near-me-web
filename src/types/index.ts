@@ -57,4 +57,23 @@ export interface Connection {
     connectedUserId: string;
     status: 'pending' | 'accepted' | 'rejected';
     createdAt: Date;
+    updatedAt?: Date;
+    message?: string; // Optional message when sending connection request
+}
+
+export interface ConnectionRequest {
+    fromUserId: string;
+    toUserId: string;
+    message?: string;
+}
+
+export interface ConnectionResponse {
+    connectionId: string;
+    action: 'accept' | 'reject';
+}
+
+export interface UserConnection {
+    user: User;
+    connection: Connection;
+    isIncoming: boolean; // true if this is a request TO the current user
 }
