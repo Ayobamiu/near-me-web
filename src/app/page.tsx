@@ -426,6 +426,13 @@ export default function Home() {
               </button>
 
               <button
+                onClick={() => router.push("/chat")}
+                className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                Messages
+              </button>
+
+              <button
                 onClick={() => setIsScanning(true)}
                 className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >

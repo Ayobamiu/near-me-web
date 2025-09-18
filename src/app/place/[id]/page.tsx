@@ -1081,6 +1081,12 @@ export default function PlacePage() {
           {/* Actions */}
           <div className="p-4 space-y-2">
             <button
+              onClick={() => router.push("/chat")}
+              className="w-full px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Messages
+            </button>
+            <button
               onClick={() => setShowConnectionManager(true)}
               className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
