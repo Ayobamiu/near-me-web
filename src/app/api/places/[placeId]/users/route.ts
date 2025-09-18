@@ -40,11 +40,14 @@ export async function GET(
                     originLng
                 );
 
+
                 if (distance <= 100) {
                     // Fetch user profile using the service
+
                     const userProfile = await userProfileService.getUserProfile(userData.userId);
 
                     if (userProfile) {
+
                         // Convert UserProfile to User
                         const user = userProfileService.convertToUser(
                             userProfile,
@@ -54,8 +57,18 @@ export async function GET(
                         user.joinedAt = userData.joinedAt?.toDate() || new Date();
                         user.isOnline = userData.isOnline;
                         users.push(user);
+                    } else {
+                        console.log('❌ No profile found for user:', userData.userId);
                     }
+                } else {
+
                 }
+            } else {
+                console.log('❌ User not eligible:', {
+                    isOnline: userData.isOnline,
+                    outOfRange: userData.outOfRange,
+                    hasLocation: !!userData.location
+                });
             }
         }
 

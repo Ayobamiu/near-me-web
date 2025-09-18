@@ -55,21 +55,31 @@ export default function Home() {
         }
       }
 
-      // Check for place join intent
+      // Check for place join intent - only show if user came from a place link
       const placeIntent = localStorage.getItem("nearme_place_intent");
       if (placeIntent) {
         try {
           const parsedPlaceIntent = JSON.parse(placeIntent);
-          // Check if intent is recent (within 10 minutes)
-          if (Date.now() - parsedPlaceIntent.timestamp < 10 * 60 * 1000) {
+          // Check if intent is recent (within 10 minutes) AND user came from a place link
+          const cameFromPlaceLink =
+            document.referrer.includes("/place/") ||
+            window.location.search.includes("fromPlace=") ||
+            sessionStorage.getItem("cameFromPlaceLink") === "true";
+
+          if (
+            Date.now() - parsedPlaceIntent.timestamp < 10 * 60 * 1000 &&
+            cameFromPlaceLink
+          ) {
             setPlaceIntent(parsedPlaceIntent);
             setShowPlaceIntent(true);
           }
           // Clear the intent regardless
           localStorage.removeItem("nearme_place_intent");
+          sessionStorage.removeItem("cameFromPlaceLink");
         } catch (error) {
           console.error("Error parsing place intent:", error);
           localStorage.removeItem("nearme_place_intent");
+          sessionStorage.removeItem("cameFromPlaceLink");
         }
       }
     }
@@ -161,13 +171,19 @@ export default function Home() {
       }
 
       // Join the place (API will handle proximity check)
-      await joinPlace(placeId, {
+      console.log("🏠 Homepage: Joining place", placeId, "for user", user.uid);
+      const joinResult = await joinPlace(placeId, {
         userId: user.uid,
         lat: userLocation.lat,
         lng: userLocation.lng,
       });
+      console.log("🏠 Homepage: Join result:", joinResult);
+
+      // Set flag to indicate user came from homepage auto-join
+      sessionStorage.setItem("cameFromHomepage", "true");
 
       // Navigate to place page - user is already joined
+      console.log("🏠 Homepage: Navigating to place page");
       router.push(`/place/${placeId}`);
     } catch (error) {
       console.error("Error joining place:", error);
@@ -263,7 +279,7 @@ export default function Home() {
             <div className="space-y-4">
               <button
                 onClick={() => {
-                  router.push(`/place/${placeIntent.placeId}`);
+                  handleJoinPlace(placeIntent.placeId);
                   setShowPlaceIntent(false);
                 }}
                 className="w-full py-4 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold text-lg transition-colors shadow-lg"
@@ -414,31 +430,6 @@ export default function Home() {
                 className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Scan QR Code
-              </button>
-
-              <button
-                onClick={() => {
-                  // For now, show a placeholder - in real app, this would get current place
-                  alert(
-                    "Share feature coming soon! This will share your current place."
-                  );
-                }}
-                className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                  />
-                </svg>
-                Share Current Place
               </button>
 
               <div className="relative">
