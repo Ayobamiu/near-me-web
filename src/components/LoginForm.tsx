@@ -153,14 +153,6 @@ export default function LoginForm() {
                     <span className="px-2 bg-white text-gray-500">or</span>
                   </div>
                 </div>
-
-                <button
-                  onClick={handleAnonymousSignIn}
-                  disabled={isLoading}
-                  className="w-full mt-4 py-3 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  {isLoading ? "Signing in..." : "Continue Anonymously"}
-                </button>
               </div>
 
               <p className="text-center text-sm text-gray-600 mt-4">

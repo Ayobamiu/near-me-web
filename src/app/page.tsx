@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import QRScanner from "@/components/QRScanner";
 import { getCurrentPosition } from "@/lib/geolocation";
-import { testFirebaseConnection } from "@/lib/testFirebase";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginForm from "@/components/LoginForm";
 // import { calculateDistance } from "@/lib/geospatial"; // Not used in this file
@@ -19,7 +18,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
-  const [firebaseStatus, setFirebaseStatus] = useState<string>("");
   const router = useRouter();
 
   if (loading) {
@@ -123,14 +121,6 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const testFirebase = async () => {
-    setFirebaseStatus("Testing Firebase connection...");
-    const success = await testFirebaseConnection();
-    setFirebaseStatus(
-      success ? "✅ Firebase connected!" : "❌ Firebase connection failed"
-    );
   };
 
   return (
@@ -294,19 +284,6 @@ export default function Home() {
 
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>Make sure location access is enabled in your browser</p>
-        </div>
-
-        {/* Firebase Test Button */}
-        <div className="mt-6 text-center">
-          <button
-            onClick={testFirebase}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
-          >
-            Test Firebase Connection
-          </button>
-          {firebaseStatus && (
-            <p className="mt-2 text-sm text-gray-600">{firebaseStatus}</p>
-          )}
         </div>
       </div>
     </div>
