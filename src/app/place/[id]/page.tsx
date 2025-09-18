@@ -636,6 +636,27 @@ export default function PlacePage() {
     }
   };
 
+  const handleLeavePlace = async () => {
+    if (!user || !placeId) return;
+
+    try {
+      console.log("🚪 Leaving place:", placeId, "for user:", user.uid);
+
+      // Call the leave API
+      await leavePlace(placeId, { userId: user.uid });
+      console.log("✅ Successfully left place");
+
+      // Stop proximity monitoring
+      stopProximityMonitoring();
+
+      // Navigate back to homepage
+      router.push("/");
+    } catch (error) {
+      console.error("Error leaving place:", error);
+      setError("Failed to leave place. Please try again.");
+    }
+  };
+
   // Early returns after all hooks
   if (authLoading) {
     return (
@@ -855,27 +876,52 @@ export default function PlacePage() {
                     )}
                   </div>
 
-                  {/* Share Button */}
-                  <button
-                    onClick={() => setShowShareModal(true)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                    title="Share this place"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-3">
+                    {/* Leave Place Button */}
+                    <button
+                      onClick={handleLeavePlace}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center space-x-2"
+                      title="Leave this place"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                      />
-                    </svg>
-                    <span>Share</span>
-                  </button>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 16l4-4m0 0l-4-4m4 4H3m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                        />
+                      </svg>
+                      <span>Leave</span>
+                    </button>
+
+                    {/* Share Button */}
+                    <button
+                      onClick={() => setShowShareModal(true)}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                      title="Share this place"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                        />
+                      </svg>
+                      <span>Share</span>
+                    </button>
+                  </div>
                 </div>
               )}
               <p className="text-gray-600">QR Code: {place.qrCode}</p>
