@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Message, User, UserConnection } from "@/types";
+import connectionService from "@/lib/connectionService";
 import moment from "moment";
 
 interface ChatConversation {
@@ -63,180 +64,125 @@ function ChatListPageContent() {
   }, [messages]);
 
   // Load user's connections and create chat conversations
-  useEffect(() => {
+  const loadChatConversations = async () => {
     if (!user || loading) return;
+    try {
+      setIsLoading(true);
+      console.log("🔍 Loading chat conversations for user:", user.uid);
 
-    const loadChatConversations = async () => {
-      try {
-        setIsLoading(true);
-        console.log("🔍 Loading chat conversations for user:", user.uid);
+      // Get user's connections using the connection service
+      const connections = await connectionService.getAcceptedConnections(
+        user.uid
+      );
 
-        // Get user's connections - we need to query both directions
-        const connectionsRef = collection(db, "connections");
+      // Helper function to process connections
+      const processConnections = async (connections: UserConnection[]) => {
+        console.log("🔄 Processing connections:", connections.length, "total");
+        const conversationPromises = connections.map(async (connection) => {
+          console.log("Processing connection:", connection);
 
-        // Query 1: Where user is the initiator
-        const q1 = query(
-          connectionsRef,
-          where("userId", "==", user.uid),
-          where("status", "==", "accepted")
-        );
-
-        // Query 2: Where user is the recipient
-        const q2 = query(
-          connectionsRef,
-          where("connectedUserId", "==", user.uid),
-          where("status", "==", "accepted")
-        );
-
-        // Helper function to process connections
-        const processConnections = async (connections: UserConnection[]) => {
-          console.log(
-            "🔄 Processing connections:",
-            connections.length,
-            "total"
-          );
-          const conversationPromises = connections.map(async (connection) => {
-            // Get the other user's ID
-            const otherUserId =
-              connection.user.id === user.uid
-                ? connection.connection.id
-                : connection.user.id;
-            if (!otherUserId) return null;
-
-            // Get the other user's profile
-            const userProfileRef = doc(db, "userProfiles", otherUserId);
-            const userProfileSnapshot = await getDoc(userProfileRef);
-
-            if (!userProfileSnapshot.exists()) return null;
-
-            const userProfile = userProfileSnapshot.data();
-
-            // Get the last message from the conversation
-            const messagesRef = collection(db, "messages");
-            const lastMessageQuery = query(
-              messagesRef,
-              where("conversationId", "==", `${user.uid}_${otherUserId}`),
-              orderBy("createdAt", "desc"),
-              limit(1)
+          // Validate connection structure
+          if (!connection || !connection.user || !connection.connection) {
+            console.warn(
+              "Invalid connection structure in processConnections:",
+              connection
             );
-            const lastMessageSnapshot = await getDocs(lastMessageQuery);
-
-            let lastMessage = "";
-            let lastMessageTime = new Date();
-            let unreadCount = 0;
-
-            if (!lastMessageSnapshot.empty) {
-              const lastMsg = lastMessageSnapshot.docs[0].data();
-              lastMessage = lastMsg.content || "";
-              lastMessageTime = lastMsg.createdAt?.toDate() || new Date();
-
-              // Count unread messages (messages after user's last read time)
-              // For now, we'll set this to 0 - you can implement proper unread tracking later
-              unreadCount = 0;
-            }
-
-            return {
-              id: `${user.uid}_${otherUserId}`,
-              userId: otherUserId,
-              userName: userProfile.displayName || "Anonymous User",
-              userPhotoUrl: userProfile.profilePictureUrl,
-              lastMessage,
-              lastMessageTime,
-              unreadCount,
-              isOnline: userProfile.isOnline || false,
-            };
-          });
-
-          const conversationResults = await Promise.all(conversationPromises);
-          const validConversations = conversationResults.filter(
-            Boolean
-          ) as ChatConversation[];
-
-          // Sort by last message time
-          validConversations.sort(
-            (a, b) =>
-              (b.lastMessageTime?.getTime() || 0) -
-              (a.lastMessageTime?.getTime() || 0)
-          );
-
-          console.log(
-            "✅ Final conversations:",
-            validConversations.length,
-            "conversations"
-          );
-          setConversations(validConversations);
-          setIsLoading(false);
-        };
-
-        // Listen to both queries
-        let connections1: UserConnection[] = [];
-        let connections2: UserConnection[] = [];
-        let hasProcessed = false;
-
-        const unsubscribe1 = onSnapshot(q1, async (snapshot1) => {
-          connections1 = snapshot1.docs.map(
-            (doc) => doc.data() as UserConnection
-          );
-          console.log(
-            "📡 Query 1 (userId) results:",
-            connections1.length,
-            "connections"
-          );
-          if (hasProcessed) {
-            // Combine both connection lists and remove duplicates
-            const allConnections = [...connections1, ...connections2];
-            const uniqueConnections = allConnections.filter(
-              (connection, index, self) =>
-                index ===
-                self.findIndex(
-                  (c) =>
-                    (c.user.id === connection.user.id &&
-                      c.connection.id === connection.connection.id) ||
-                    (c.user.id === connection.connection.id &&
-                      c.connection.id === connection.connection.id)
-                )
-            );
-            await processConnections(uniqueConnections);
+            return null;
           }
+
+          // Get the other user's ID
+          const otherUserId =
+            connection.user.id === user.uid
+              ? connection.connection.id
+              : connection.user.id;
+          if (!otherUserId) return null;
+
+          // Get the other user's profile
+          const userProfileRef = doc(db, "userProfiles", otherUserId);
+          const userProfileSnapshot = await getDoc(userProfileRef);
+
+          if (!userProfileSnapshot.exists()) return null;
+
+          const userProfile = userProfileSnapshot.data();
+
+          // Get the last message from the conversation
+          const messagesRef = collection(db, "messages");
+          const lastMessageQuery = query(
+            messagesRef,
+            where("conversationId", "==", `${user.uid}_${otherUserId}`),
+            orderBy("createdAt", "desc"),
+            limit(1)
+          );
+          const lastMessageSnapshot = await getDocs(lastMessageQuery);
+
+          let lastMessage = "";
+          let lastMessageTime = new Date();
+          let unreadCount = 0;
+
+          if (!lastMessageSnapshot.empty) {
+            const lastMsg = lastMessageSnapshot.docs[0].data();
+            lastMessage = lastMsg.content || "";
+            lastMessageTime = lastMsg.createdAt?.toDate() || new Date();
+
+            // Count unread messages (messages after user's last read time)
+            // For now, we'll set this to 0 - you can implement proper unread tracking later
+            unreadCount = 0;
+          }
+
+          return {
+            id: `${user.uid}_${otherUserId}`,
+            userId: otherUserId,
+            userName: userProfile.displayName || "Anonymous User",
+            userPhotoUrl: userProfile.profilePictureUrl,
+            lastMessage,
+            lastMessageTime,
+            unreadCount,
+            isOnline: userProfile.isOnline || false,
+          };
         });
 
-        const unsubscribe2 = onSnapshot(q2, async (snapshot2) => {
-          connections2 = snapshot2.docs.map(
-            (doc) => doc.data() as UserConnection
-          );
-          console.log(
-            "📡 Query 2 (connectedUserId) results:",
-            connections2.length,
-            "connections"
-          );
-          hasProcessed = true;
-          // Combine both connection lists and remove duplicates
-          const allConnections = [...connections1, ...connections2];
-          const uniqueConnections = allConnections.filter(
-            (connection, index, self) =>
-              index ===
-              self.findIndex(
-                (c) =>
-                  (c.user.id === connection.user.id &&
-                    c.connection.id === connection.connection.id) ||
-                  (c.user.id === connection.connection.id &&
-                    c.connection.id === connection.user.id)
-              )
-          );
-          await processConnections(uniqueConnections);
-        });
+        const conversationResults = await Promise.all(conversationPromises);
+        const validConversations = conversationResults.filter(
+          Boolean
+        ) as ChatConversation[];
 
-        return () => {
-          unsubscribe1();
-          unsubscribe2();
-        };
-      } catch (error) {
-        console.error("Error loading chat conversations:", error);
-        setError("Failed to load conversations");
+        // Sort by last message time
+        validConversations.sort(
+          (a, b) =>
+            (b.lastMessageTime?.getTime() || 0) -
+            (a.lastMessageTime?.getTime() || 0)
+        );
+
+        console.log(
+          "✅ Final conversations:",
+          validConversations.length,
+          "conversations"
+        );
+        setConversations(validConversations);
         setIsLoading(false);
-      }
-    };
+      };
 
+      console.log("📡 Query results:", connections.length, "connections");
+      console.log("Connections sample:", connections[0]);
+
+      // Filter out invalid connections
+      const validConnections = connections.filter((connection) => {
+        if (!connection || !connection.user || !connection.connection) {
+          console.warn("Invalid connection structure:", connection);
+          return false;
+        }
+        return true;
+      });
+
+      await processConnections(validConnections);
+    } catch (error) {
+      console.error("Error loading chat conversations:", error);
+      setError("Failed to load conversations");
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadChatConversations();
   }, [user, loading]);
 

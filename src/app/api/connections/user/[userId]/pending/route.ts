@@ -38,6 +38,7 @@ export async function GET(
                 connectedUserId: connectionData.connectedUserId,
                 status: connectionData.status,
                 message: connectionData.message || '',
+                users: connectionData.users || [connectionData.userId, connectionData.connectedUserId],
                 createdAt: connectionData.createdAt?.toDate() || new Date(),
                 updatedAt: connectionData.updatedAt?.toDate() || new Date()
             };

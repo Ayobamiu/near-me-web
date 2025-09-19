@@ -50,6 +50,7 @@ export async function POST(
             connectedUserId: connectionData.connectedUserId,
             status: 'accepted',
             message: connectionData.message || '',
+            users: connectionData.users || [connectionData.userId, connectionData.connectedUserId],
             createdAt: connectionData.createdAt?.toDate() || new Date(),
             updatedAt: new Date()
         };

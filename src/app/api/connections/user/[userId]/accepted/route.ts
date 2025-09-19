@@ -4,6 +4,17 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { UserConnection, Connection, User } from '@/types';
 import userProfileService from '@/lib/userProfileService';
 
+export async function OPTIONS() {
+    return new NextResponse(null, {
+        status: 200,
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+    });
+}
+
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ userId: string }> }
@@ -18,31 +29,21 @@ export async function GET(
             );
         }
 
-        // Get accepted connections for this user (both sent and received)
+        // Get accepted connections for this user using the users array
         const connectionsRef = collection(db, 'connections');
-        const sentAcceptedQuery = query(
+        const acceptedQuery = query(
             connectionsRef,
-            where('userId', '==', userId),
+            where('users', 'array-contains', userId),
             where('status', '==', 'accepted'),
             orderBy('createdAt', 'desc')
         );
 
-        const receivedAcceptedQuery = query(
-            connectionsRef,
-            where('connectedUserId', '==', userId),
-            where('status', '==', 'accepted'),
-            orderBy('createdAt', 'desc')
-        );
-
-        const [sentAcceptedSnapshot, receivedAcceptedSnapshot] = await Promise.all([
-            getDocs(sentAcceptedQuery),
-            getDocs(receivedAcceptedQuery)
-        ]);
+        const acceptedSnapshot = await getDocs(acceptedQuery);
 
         const userConnections: UserConnection[] = [];
 
-        // Process sent accepted connections
-        for (const doc of sentAcceptedSnapshot.docs) {
+        // Process all accepted connections
+        for (const doc of acceptedSnapshot.docs) {
             const connectionData = doc.data();
             const connection: Connection = {
                 id: doc.id,
@@ -51,53 +52,34 @@ export async function GET(
                 status: connectionData.status,
                 message: connectionData.message || '',
                 createdAt: connectionData.createdAt?.toDate() || new Date(),
-                updatedAt: connectionData.updatedAt?.toDate() || new Date()
+                updatedAt: connectionData.updatedAt?.toDate() || new Date(),
+                users: connectionData.users || [connectionData.userId, connectionData.connectedUserId]
             };
 
-            // Get user profile for the connected user
-            const userProfile = await userProfileService.getUserProfile(connection.connectedUserId);
-            if (userProfile) {
-                const user: User = userProfileService.convertToUser(
-                    userProfile,
-                    { lat: 0, lng: 0 }, // Location not needed for connection list
-                    0
-                );
+            // Determine which user is the "other" user (not the current user)
+            const otherUserId = connection.userId === userId ? connection.connectedUserId : connection.userId;
+            const isIncoming = connection.connectedUserId === userId;
 
-                userConnections.push({
-                    user,
-                    connection,
-                    isIncoming: false
-                });
-            }
-        }
+            // Get user profile for the other user
+            try {
+                const userProfile = await userProfileService.getUserProfile(otherUserId);
+                if (userProfile) {
+                    const user: User = userProfileService.convertToUser(
+                        userProfile,
+                        { lat: 0, lng: 0 }, // Location not needed for connection list
+                        0
+                    );
 
-        // Process received accepted connections
-        for (const doc of receivedAcceptedSnapshot.docs) {
-            const connectionData = doc.data();
-            const connection: Connection = {
-                id: doc.id,
-                userId: connectionData.userId,
-                connectedUserId: connectionData.connectedUserId,
-                status: connectionData.status,
-                message: connectionData.message || '',
-                createdAt: connectionData.createdAt?.toDate() || new Date(),
-                updatedAt: connectionData.updatedAt?.toDate() || new Date()
-            };
-
-            // Get user profile for the user who sent the request
-            const userProfile = await userProfileService.getUserProfile(connection.userId);
-            if (userProfile) {
-                const user: User = userProfileService.convertToUser(
-                    userProfile,
-                    { lat: 0, lng: 0 }, // Location not needed for connection list
-                    0
-                );
-
-                userConnections.push({
-                    user,
-                    connection,
-                    isIncoming: true
-                });
+                    userConnections.push({
+                        user,
+                        connection,
+                        isIncoming
+                    });
+                } else {
+                    console.warn(`User profile not found for otherUserId: ${otherUserId}`);
+                }
+            } catch (error) {
+                console.error(`Error fetching user profile for otherUserId: ${otherUserId}`, error);
             }
         }
 
@@ -106,12 +88,25 @@ export async function GET(
             b.connection.createdAt.getTime() - a.connection.createdAt.getTime()
         );
 
-        return NextResponse.json(userConnections);
+        return NextResponse.json(userConnections, {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            },
+        });
     } catch (error) {
         console.error('Error fetching accepted connections:', error);
         return NextResponse.json(
             { error: 'Failed to fetch accepted connections' },
-            { status: 500 }
+            {
+                status: 500,
+                headers: {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                },
+            }
         );
     }
 }

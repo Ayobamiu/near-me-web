@@ -59,6 +59,7 @@ export interface Connection {
     createdAt: Date;
     updatedAt?: Date;
     message?: string; // Optional message when sending connection request
+    users: string[];
 }
 
 export interface ConnectionRequest {

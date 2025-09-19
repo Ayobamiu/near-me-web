@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
             connectedUserId: toUserId,
             status: 'pending',
             message: message || '',
+            users: [fromUserId, toUserId],
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         };
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
             connectedUserId: toUserId,
             status: 'pending',
             message: message || '',
+            users: [fromUserId, toUserId],
             createdAt: new Date(),
             updatedAt: new Date()
         };
