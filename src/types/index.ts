@@ -121,3 +121,28 @@ export interface ConversationSummary {
     unreadCount: number;
     lastMessagePreview: string;
 }
+
+export interface Group {
+    id: string;
+    placeId: string;
+    name: string;
+    description?: string;
+    createdBy: string;
+    createdAt: Date;
+    updatedAt: Date;
+    isActive: boolean;
+    memberIds: string[];
+    lastMessageAt?: Date;
+}
+
+export interface GroupMessage {
+    id: string;
+    groupId: string;
+    senderId: string;
+    content: string;
+    messageType: 'text' | 'emoji' | 'image' | 'file';
+    createdAt: Date;
+    updatedAt?: Date;
+    readBy: string[]; // Array of user IDs who have read this message
+    replyToMessageId?: string;
+}

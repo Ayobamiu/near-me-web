@@ -36,5 +36,15 @@ service cloud.firestore {
     match /messages/{messageId} {
       allow read, write: if true;
     }
+    
+    // Allow public read/write access to groups for MVP
+    match /groups/{groupId} {
+      allow read, write: if true;
+    }
+    
+    // Allow public read/write access to group messages for MVP
+    match /groupMessages/{messageId} {
+      allow read, write: if true;
+    }
   }
 }
