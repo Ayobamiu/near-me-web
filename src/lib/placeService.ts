@@ -1,4 +1,4 @@
-import { User } from '@/types';
+import { User, Place } from '@/types';
 
 const API_BASE = '/api';
 
@@ -19,6 +19,17 @@ export interface CreatePlaceRequest {
 
 export interface LeavePlaceRequest {
     userId: string;
+}
+
+export interface NearbyPlace extends Place {
+    distance: number;
+    userCount: number;
+}
+
+export interface NearbyPlacesResponse {
+    success: boolean;
+    places: NearbyPlace[];
+    count: number;
 }
 
 export interface UsersResponse {
@@ -77,6 +88,36 @@ export const leavePlace = async (placeId: string, data: LeavePlaceRequest) => {
     }
 
     return response.json();
+};
+
+// Get nearby places
+export const getNearbyPlaces = async (
+    lat: number,
+    lng: number,
+    radius: number = 1
+): Promise<NearbyPlacesResponse> => {
+    try {
+        const url = new URL(`${API_BASE}/places/nearby`, window.location.origin);
+        url.searchParams.set('lat', lat.toString());
+        url.searchParams.set('lng', lng.toString());
+        url.searchParams.set('radius', radius.toString());
+
+        const response = await fetch(url.toString());
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to fetch nearby places');
+        }
+
+        return response.json();
+    } catch (error) {
+        console.error('Error fetching nearby places:', error);
+        return {
+            success: false,
+            places: [],
+            count: 0
+        };
+    }
 };
 
 // Get users in a place

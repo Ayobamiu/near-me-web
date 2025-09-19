@@ -8,19 +8,23 @@ import { getCurrentPosition } from "@/lib/geolocation";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginForm from "@/components/LoginForm";
 // import { calculateDistance } from "@/lib/geospatial"; // Not used in this file
-import {
-  doc,
-  getDoc,
-  setDoc,
-  collection,
-  getDocs,
-} from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createPlace, joinPlace } from "@/lib/placeService";
 import { Place } from "@/types";
+import { useLocation } from "@/hooks/useLocation";
+import NearbyPlacesList from "@/components/NearbyPlacesList";
+import UserHeader from "@/components/UserHeader";
 
 export default function Home() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
+  const {
+    lat,
+    lng,
+    error: locationError,
+    isLoading: locationLoading,
+    requestLocation,
+  } = useLocation();
   const [qrCode, setQrCode] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [showQRBadge, setShowQRBadge] = useState(false);
@@ -28,6 +32,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
   const [showConnectionIntent, setShowConnectionIntent] = useState(false);
+  const [showDiscover, setShowDiscover] = useState(false);
   const [connectionIntent, setConnectionIntent] = useState<{
     targetUserId: string;
     targetUserName: string;
@@ -265,6 +270,21 @@ export default function Home() {
         errorWithCode?.message?.includes("Location access")
       ) {
         setGeolocationError((error as Error).message);
+      } else if (
+        (error as Error)?.message?.includes("You are too far from this place")
+      ) {
+        // Handle distance error specifically with actual distance
+        const distance = (error as Error & { distance?: number })?.distance;
+        if (distance) {
+          const errorMsg = `You are ${distance}m away, but need to be within 100m to join this place. Move ${
+            distance - 100
+          }m closer and try again.`;
+          setError(errorMsg);
+        } else {
+          setError(
+            "You are too far from this place. Please move closer and try again."
+          );
+        }
       } else {
         setError("Unable to join place. Please try again.");
       }
@@ -428,56 +448,21 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <UserHeader
+        onDiscoverClick={() => setShowDiscover(true)}
+        showDiscoverButton={true}
+        onMessagesClick={() => router.push("/chat")}
+        showMessagesButton={true}
+      />
+
       <div className="max-w-md mx-auto px-4 py-8">
-        {/* User Profile Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-                {user?.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || "User"}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback to initial if image fails to load
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = "none";
-                      const parent = target.parentElement;
-                      if (parent) {
-                        parent.innerHTML = `<span class="text-blue-600 font-semibold text-sm">${
-                          user?.displayName?.charAt(0) ||
-                          user?.email?.charAt(0) ||
-                          "A"
-                        }</span>`;
-                      }
-                    }}
-                  />
-                ) : (
-                  <span className="text-blue-600 font-semibold text-sm">
-                    {user?.displayName?.charAt(0) ||
-                      user?.email?.charAt(0) ||
-                      "A"}
-                  </span>
-                )}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {user?.displayName || "Anonymous User"}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {user?.email || "Anonymous"}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={signOut}
-              className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
+        {/* Error Display - Always visible at top */}
+        {error && (
+          <div className="mb-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-sm text-red-600">{error}</p>
           </div>
-        </div>
+        )}
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">NearMe</h1>
@@ -485,6 +470,67 @@ export default function Home() {
             Scan a QR code or enter a place code to join
           </p>
         </div>
+
+        {/* Discover Section */}
+        {showDiscover && (
+          <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Nearby Places
+              </h2>
+              <button
+                onClick={() => setShowDiscover(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div>
+              {locationError ? (
+                <div className="text-center py-4">
+                  <p className="text-red-600 mb-2">{locationError}</p>
+                  <button
+                    onClick={requestLocation}
+                    disabled={locationLoading}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50"
+                  >
+                    {locationLoading ? "Requesting..." : "Enable Location"}
+                  </button>
+                </div>
+              ) : lat && lng ? (
+                <NearbyPlacesList
+                  lat={lat}
+                  lng={lng}
+                  onJoinPlace={handleJoinPlace}
+                />
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-gray-600 mb-2">Location access needed</p>
+                  <button
+                    onClick={requestLocation}
+                    disabled={locationLoading}
+                    className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50"
+                  >
+                    {locationLoading ? "Requesting..." : "Find Nearby Places"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Recent Places Section */}
         {recentPlaces.length > 0 && (
@@ -539,13 +585,6 @@ export default function Home() {
                 className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
               >
                 My QR Badge
-              </button>
-
-              <button
-                onClick={() => router.push("/chat")}
-                className="w-full py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Messages
               </button>
 
               <button
