@@ -8,9 +8,20 @@ import { getCurrentPosition } from "@/lib/geolocation";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginForm from "@/components/LoginForm";
 // import { calculateDistance } from "@/lib/geospatial"; // Not used in this file
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createPlace, joinPlace } from "@/lib/placeService";
+import { Place } from "@/types";
 
 export default function Home() {
   const { user, loading, signOut } = useAuth();
@@ -33,7 +44,59 @@ export default function Home() {
     placeName: string;
     timestamp: number;
   } | null>(null);
+  const [recentPlaces, setRecentPlaces] = useState<Place[]>([]);
+  const [isLoadingRecentPlaces, setIsLoadingRecentPlaces] = useState(false);
   const router = useRouter();
+
+  // Load recent places for the user
+  const loadRecentPlaces = async () => {
+    if (!user) return;
+
+    setIsLoadingRecentPlaces(true);
+    try {
+      // Get places where the user has been a member
+      const placesRef = collection(db, "places");
+      const placesSnapshot = await getDocs(placesRef);
+
+      const userPlaces: Place[] = [];
+
+      for (const placeDoc of placesSnapshot.docs) {
+        const placeData = placeDoc.data();
+        const userRef = doc(db, "places", placeDoc.id, "users", user.uid);
+        const userDoc = await getDoc(userRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // Only include places where user has joined before
+          if (userData.joinedAt && placeData.name) {
+            userPlaces.push({
+              id: placeDoc.id,
+              name: placeData.name,
+              description: placeData.description || "",
+              createdBy: placeData.createdBy || "",
+              createdAt: placeData.createdAt?.toDate() || new Date(),
+              updatedAt: placeData.updatedAt?.toDate() || new Date(),
+              originLocation: placeData.originLocation,
+              radius: placeData.radius || 100,
+              isActive: placeData.isActive !== false,
+              lastJoinedAt: userData.joinedAt?.toDate() || new Date(),
+            } as Place & { lastJoinedAt: Date });
+          }
+        }
+      }
+
+      // Sort by last joined date (most recent first) and limit to 5
+      userPlaces.sort(
+        (a, b) =>
+          (b as any).lastJoinedAt.getTime() - (a as any).lastJoinedAt.getTime()
+      );
+      setRecentPlaces(userPlaces.slice(0, 5));
+    } catch (error) {
+      console.error("Error loading recent places:", error);
+    } finally {
+      setIsLoadingRecentPlaces(false);
+    }
+  };
 
   // Check for connection intent after login
   useEffect(() => {
@@ -82,6 +145,9 @@ export default function Home() {
           sessionStorage.removeItem("cameFromPlaceLink");
         }
       }
+
+      // Load recent places
+      loadRecentPlaces();
     }
   }, [user, loading]);
 
@@ -185,6 +251,9 @@ export default function Home() {
       // Navigate to place page - user is already joined
       console.log("🏠 Homepage: Navigating to place page");
       router.push(`/place/${placeId}`);
+
+      // Refresh recent places after joining
+      loadRecentPlaces();
     } catch (error) {
       console.error("Error joining place:", error);
 
@@ -204,6 +273,10 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRejoinPlace = async (placeId: string) => {
+    await handleJoinPlace(placeId);
   };
 
   // Show intent experiences as full-screen overlays
@@ -414,6 +487,51 @@ export default function Home() {
             Scan a QR code or enter a place code to join
           </p>
         </div>
+
+        {/* Recent Places Section */}
+        {recentPlaces.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm border p-4 mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-3">
+              Recent Places
+            </h2>
+            <div className="space-y-2">
+              {isLoadingRecentPlaces ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-sm text-gray-500">
+                    Loading recent places...
+                  </p>
+                </div>
+              ) : (
+                recentPlaces.map((place) => (
+                  <div
+                    key={place.id}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {place.name}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Last joined:{" "}
+                        {new Date(
+                          (place as any).lastJoinedAt
+                        ).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRejoinPlace(place.id)}
+                      disabled={isLoading}
+                      className="ml-3 px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {isLoading ? "Joining..." : "Rejoin"}
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
           {!isScanning ? (
