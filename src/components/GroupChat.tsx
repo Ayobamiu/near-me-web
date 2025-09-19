@@ -102,7 +102,12 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
       );
       const profilesMap: Record<string, User> = {};
       profiles.forEach((profile) => {
-        profilesMap[profile.id] = profile;
+        // Convert UserProfile to User by adding missing properties
+        profilesMap[profile.id] = {
+          joinedAt: new Date(), // Default value
+          isOnline: false, // Default value
+          ...profile,
+        } as User;
       });
       setUserProfiles(profilesMap);
     } catch (error) {

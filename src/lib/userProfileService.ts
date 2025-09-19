@@ -22,6 +22,7 @@ export interface UserProfile {
     distanceRadius?: number;
     createdAt: Date | { toDate: () => Date };
     updatedAt: Date | { toDate: () => Date };
+    joinedAt?: Date | { toDate: () => Date };
 }
 
 class UserProfileService {

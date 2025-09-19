@@ -79,6 +79,7 @@ export default function Home() {
               originLocation: placeData.originLocation,
               radius: placeData.radius || 100,
               isActive: placeData.isActive !== false,
+              qrCode: placeDoc.id, // Use place ID as QR code
               lastJoinedAt: userData.joinedAt?.toDate() || new Date(),
             } as Place & { lastJoinedAt: Date });
           }

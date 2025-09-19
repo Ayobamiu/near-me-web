@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { User, Place, Group } from "@/types";
 import { getCurrentPosition } from "@/lib/geolocation";
@@ -74,7 +74,7 @@ export default function PlacePage() {
   const [group, setGroup] = useState<Group | null>(null);
   const [isLoadingGroup, setIsLoadingGroup] = useState(false);
 
-  const loadConnectionCounts = async () => {
+  const loadConnectionCounts = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -88,7 +88,7 @@ export default function PlacePage() {
     } catch (error) {
       console.error("Error loading connection counts:", error);
     }
-  };
+  }, [user]);
 
   const handleConnectionManagerClose = () => {
     setShowConnectionManager(false);
@@ -96,7 +96,7 @@ export default function PlacePage() {
     loadConnectionCounts();
   };
 
-  const loadPlaceData = async () => {
+  const loadPlaceData = useCallback(async () => {
     try {
       setIsLoading(true);
       setGeolocationError(null);
@@ -364,7 +364,7 @@ export default function PlacePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [placeId, user]);
 
   useEffect(() => {
     if (!authLoading) {
@@ -373,7 +373,7 @@ export default function PlacePage() {
         loadConnectionCounts();
       }
     }
-  }, [placeId, user, authLoading]);
+  }, [placeId, user, authLoading, loadPlaceData, loadConnectionCounts]);
 
   // Store place join intent for non-authenticated users
   useEffect(() => {
@@ -388,7 +388,76 @@ export default function PlacePage() {
       sessionStorage.setItem("cameFromPlaceLink", "true");
     }
   }, [user, place]);
+  const stopProximityMonitoring = useCallback(() => {
+    if (proximityCheckInterval) {
+      clearInterval(proximityCheckInterval);
+      setProximityCheckInterval(null);
+    }
+  }, [proximityCheckInterval]);
 
+  const loadGroup = useCallback(async () => {
+    if (!place || !user) {
+      return;
+    }
+
+    try {
+      setIsLoadingGroup(true);
+
+      // Check if group exists for this place
+      const groupsRef = collection(db, "groups");
+      const groupQuery = query(
+        groupsRef,
+        where("placeId", "==", placeId),
+        where("isActive", "==", true)
+      );
+
+      const groupSnapshot = await getDocs(groupQuery);
+
+      if (!groupSnapshot.empty) {
+        // Group exists, get it
+        const groupDoc = groupSnapshot.docs[0];
+        const groupData = {
+          id: groupDoc.id,
+          ...groupDoc.data(),
+          createdAt: groupDoc.data().createdAt.toDate(),
+          updatedAt: groupDoc.data().updatedAt.toDate(),
+          lastMessageAt: groupDoc.data().lastMessageAt?.toDate(),
+        } as Group;
+
+        setGroup(groupData);
+
+        // Join the group if user is not already a member
+        if (!groupData.memberIds.includes(user.uid)) {
+          await fetch(`/api/groups/${groupData.id}/join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.uid }),
+          });
+        }
+      } else {
+        // No group exists, create one
+        const response = await fetch("/api/groups/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            placeId: placeId,
+            name: place.name,
+            createdBy: user.uid,
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Reload the group
+          loadGroup();
+        }
+      }
+    } catch (error) {
+      console.error("Error loading group:", error);
+    } finally {
+      setIsLoadingGroup(false);
+    }
+  }, [place, user]);
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
@@ -402,14 +471,14 @@ export default function PlacePage() {
         console.log("🚪 User navigating from homepage, not marking as offline");
       }
     };
-  }, [user, placeId]);
+  }, [user, placeId, stopProximityMonitoring]);
 
   // Load group when place is loaded and user is in the place
   useEffect(() => {
     if (place && user) {
       loadGroup();
     }
-  }, [place, user, isAlreadyJoined, canJoin]);
+  }, [place, user, loadGroup]);
 
   const retryGeolocation = () => {
     setGeolocationError(null);
@@ -518,12 +587,6 @@ export default function PlacePage() {
   };
 
   // Function to stop proximity monitoring
-  const stopProximityMonitoring = () => {
-    if (proximityCheckInterval) {
-      clearInterval(proximityCheckInterval);
-      setProximityCheckInterval(null);
-    }
-  };
 
   const handleJoinPlace = async () => {
     if (!user || !userLocation || !place) return;
@@ -673,70 +736,6 @@ export default function PlacePage() {
     } catch (error) {
       console.error("Error leaving place:", error);
       setError("Failed to leave place. Please try again.");
-    }
-  };
-
-  const loadGroup = async () => {
-    if (!place || !user) {
-      return;
-    }
-
-    try {
-      setIsLoadingGroup(true);
-
-      // Check if group exists for this place
-      const groupsRef = collection(db, "groups");
-      const groupQuery = query(
-        groupsRef,
-        where("placeId", "==", placeId),
-        where("isActive", "==", true)
-      );
-
-      const groupSnapshot = await getDocs(groupQuery);
-
-      if (!groupSnapshot.empty) {
-        // Group exists, get it
-        const groupDoc = groupSnapshot.docs[0];
-        const groupData = {
-          id: groupDoc.id,
-          ...groupDoc.data(),
-          createdAt: groupDoc.data().createdAt.toDate(),
-          updatedAt: groupDoc.data().updatedAt.toDate(),
-          lastMessageAt: groupDoc.data().lastMessageAt?.toDate(),
-        } as Group;
-
-        setGroup(groupData);
-
-        // Join the group if user is not already a member
-        if (!groupData.memberIds.includes(user.uid)) {
-          await fetch(`/api/groups/${groupData.id}/join`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user.uid }),
-          });
-        }
-      } else {
-        // No group exists, create one
-        const response = await fetch("/api/groups/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            placeId: placeId,
-            name: place.name,
-            createdBy: user.uid,
-          }),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Reload the group
-          loadGroup();
-        }
-      }
-    } catch (error) {
-      console.error("Error loading group:", error);
-    } finally {
-      setIsLoadingGroup(false);
     }
   };
 
