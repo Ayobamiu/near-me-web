@@ -5,11 +5,11 @@ import { GroupMessage } from "@/types";
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { groupId: string } }
+    { params }: { params: Promise<{ groupId: string }> }
 ) {
     try {
         const { senderId, content, messageType = 'text' } = await request.json();
-        const { groupId } = params;
+        const { groupId } = await params;
 
         if (!senderId || !content) {
             return NextResponse.json(
@@ -46,10 +46,10 @@ export async function POST(
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { groupId: string } }
+    { params }: { params: Promise<{ groupId: string }> }
 ) {
     try {
-        const { groupId } = params;
+        const { groupId } = await params;
         const { searchParams } = new URL(request.url);
         const limitCount = parseInt(searchParams.get("limit") || "50");
 

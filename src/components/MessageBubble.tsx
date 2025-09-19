@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ChatMessage } from "@/types";
+import moment from "moment";
 
 interface MessageBubbleProps {
   chatMessage: ChatMessage;
@@ -15,35 +16,6 @@ export default function MessageBubble({
   showTimestamp = true,
 }: MessageBubbleProps) {
   const { message, sender, isFromCurrentUser } = chatMessage;
-
-  const formatTime = (date: Date) => {
-    return new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    }).format(date);
-  };
-
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const messageDate = new Date(date);
-    const diffInHours =
-      (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return formatTime(messageDate);
-    } else if (diffInHours < 48) {
-      return `Yesterday ${formatTime(messageDate)}`;
-    } else {
-      return new Intl.DateTimeFormat("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      }).format(messageDate);
-    }
-  };
 
   return (
     <div
@@ -134,7 +106,9 @@ export default function MessageBubble({
             </div>
           )}
 
-          {showTimestamp && <span>{formatDate(message.createdAt)}</span>}
+          {showTimestamp && (
+            <span>{moment(message.createdAt).format("HH:mm")}</span>
+          )}
         </div>
       </div>
 

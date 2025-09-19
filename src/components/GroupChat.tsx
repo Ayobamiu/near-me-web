@@ -12,6 +12,7 @@ import {
   orderBy,
   onSnapshot,
 } from "firebase/firestore";
+import moment from "moment";
 
 interface GroupChatProps {
   group: Group;
@@ -171,42 +172,6 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
     }
   };
 
-  const formatMessageTime = (date: Date | string | unknown) => {
-    try {
-      // Handle different date formats
-      let dateObj: Date;
-
-      if (date instanceof Date) {
-        dateObj = date;
-      } else if (typeof date === "string") {
-        dateObj = new Date(date);
-      } else if (date && typeof date === "object" && date.seconds) {
-        // Handle Firestore Timestamp
-        dateObj = new Date(date.seconds * 1000);
-      } else if (date && typeof date === "object" && date.toDate) {
-        // Handle Firestore Timestamp with toDate method
-        dateObj = date.toDate();
-      } else {
-        console.warn("Invalid date format:", date);
-        return "Invalid time";
-      }
-
-      // Check if the date is valid
-      if (isNaN(dateObj.getTime())) {
-        console.warn("Invalid date value:", date);
-        return "Invalid time";
-      }
-
-      return new Intl.DateTimeFormat("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(dateObj);
-    } catch (error) {
-      console.error("Error formatting date:", error, "Original date:", date);
-      return "Invalid time";
-    }
-  };
-
   const getSenderName = (senderId: string) => {
     const profile = userProfiles[senderId];
     return profile?.displayName || "Unknown User";
@@ -336,7 +301,7 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
                         isFromCurrentUser ? "text-blue-100" : "text-gray-500"
                       }`}
                     >
-                      {formatMessageTime(message.createdAt)}
+                      {moment(message.createdAt).format("HH:mm")}
                     </p>
                   </div>
                 </div>

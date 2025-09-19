@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from "react";
 import { ChatMessage } from "@/types";
 import MessageBubble from "./MessageBubble";
+import moment from "moment";
 
 interface MessageListProps {
   messages: ChatMessage[];
@@ -53,26 +54,6 @@ export default function MessageList({
   };
 
   const messageGroups = groupMessagesByDate(messages);
-
-  const formatDateHeader = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return date.toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-  };
 
   if (isLoading && messages.length === 0) {
     return (
@@ -138,7 +119,7 @@ export default function MessageList({
           {/* Date header */}
           <div className="text-center mb-4">
             <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-              {formatDateHeader(dateString)}
+              {moment(dateString).format("MMMM D, YYYY")}
             </span>
           </div>
 

@@ -5,80 +5,100 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface ConnectionManagerProps {
   onClose: () => void;
+  connections: UserConnection[];
+  handleAcceptConnection: (connectionId: string) => void;
+  handleRejectConnection: (connectionId: string) => void;
+  handleRemoveConnection: (connectionId: string) => void;
+  isLoading: boolean;
+  error: string;
 }
 
-export default function ConnectionManager({ onClose }: ConnectionManagerProps) {
+export default function ConnectionManager({
+  onClose,
+  connections,
+  handleAcceptConnection,
+  handleRejectConnection,
+  handleRemoveConnection,
+  isLoading,
+  error,
+}: ConnectionManagerProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"pending" | "accepted">("pending");
-  const [connections, setConnections] = useState<UserConnection[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const pendingConnections = connections.filter(
+    (connection) => connection.connection.status === "pending"
+  );
+  const acceptedConnections = connections.filter(
+    (connection) => connection.connection.status === "accepted"
+  );
+  const showingConnections =
+    activeTab === "pending" ? pendingConnections : acceptedConnections;
+  // const [connections, setConnections] = useState<UserConnection[]>(connections);
 
-  useEffect(() => {
-    if (user) {
-      loadConnections();
-    }
-  }, [user, activeTab]);
+  // useEffect(() => {
+  //   if (user) {
+  //     loadConnections();
+  //   }
+  // }, [user, activeTab]);
 
-  const loadConnections = async () => {
-    if (!user) return;
+  // const loadConnections = async () => {
+  //   if (!user) return;
 
-    setIsLoading(true);
-    setError("");
+  //   setIsLoading(true);
+  //   setError("");
 
-    try {
-      let data: UserConnection[];
-      if (activeTab === "pending") {
-        data = await connectionService.getPendingConnections(user.uid);
-      } else {
-        data = await connectionService.getAcceptedConnections(user.uid);
-      }
-      setConnections(data);
-    } catch (error) {
-      console.error("Error loading connections:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to load connections"
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //   try {
+  //     let data: UserConnection[];
+  //     if (activeTab === "pending") {
+  //       data = await connectionService.getPendingConnections(user.uid);
+  //     } else {
+  //       data = await connectionService.getAcceptedConnections(user.uid);
+  //     }
+  //     setConnections(data);
+  //   } catch (error) {
+  //     console.error("Error loading connections:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to load connections"
+  //     );
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
-  const handleAcceptConnection = async (connectionId: string) => {
-    try {
-      await connectionService.acceptConnection(connectionId);
-      loadConnections(); // Reload to update the list
-    } catch (error) {
-      console.error("Error accepting connection:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to accept connection"
-      );
-    }
-  };
+  // const handleAcceptConnection = async (connectionId: string) => {
+  //   try {
+  //     await connectionService.acceptConnection(connectionId);
+  //     loadConnections(); // Reload to update the list
+  //   } catch (error) {
+  //     console.error("Error accepting connection:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to accept connection"
+  //     );
+  //   }
+  // };
 
-  const handleRejectConnection = async (connectionId: string) => {
-    try {
-      await connectionService.rejectConnection(connectionId);
-      loadConnections(); // Reload to update the list
-    } catch (error) {
-      console.error("Error rejecting connection:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to reject connection"
-      );
-    }
-  };
+  // const handleRejectConnection = async (connectionId: string) => {
+  //   try {
+  //     await connectionService.rejectConnection(connectionId);
+  //     loadConnections(); // Reload to update the list
+  //   } catch (error) {
+  //     console.error("Error rejecting connection:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to reject connection"
+  //     );
+  //   }
+  // };
 
-  const handleRemoveConnection = async (connectionId: string) => {
-    try {
-      await connectionService.removeConnection(connectionId);
-      loadConnections(); // Reload to update the list
-    } catch (error) {
-      console.error("Error removing connection:", error);
-      setError(
-        error instanceof Error ? error.message : "Failed to remove connection"
-      );
-    }
-  };
+  // const handleRemoveConnection = async (connectionId: string) => {
+  //   try {
+  //     await connectionService.removeConnection(connectionId);
+  //     loadConnections(); // Reload to update the list
+  //   } catch (error) {
+  //     console.error("Error removing connection:", error);
+  //     setError(
+  //       error instanceof Error ? error.message : "Failed to remove connection"
+  //     );
+  //   }
+  // };
 
   if (!user) {
     return null;
@@ -143,7 +163,7 @@ export default function ConnectionManager({ onClose }: ConnectionManagerProps) {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-          ) : connections.length === 0 ? (
+          ) : showingConnections.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">
                 {activeTab === "pending"
@@ -153,7 +173,7 @@ export default function ConnectionManager({ onClose }: ConnectionManagerProps) {
             </div>
           ) : (
             <div className="space-y-4">
-              {connections.map((userConnection) => (
+              {showingConnections.map((userConnection) => (
                 <ConnectionCard
                   key={userConnection.connection.id}
                   userConnection={userConnection}

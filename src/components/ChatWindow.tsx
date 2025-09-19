@@ -234,9 +234,8 @@ export default function ChatWindow({
   };
 
   const handleLoadMore = () => {
-    if (messages.length > 0 && !isLoadingMore) {
-      const oldestMessage = messages[0];
-      loadMessages(oldestMessage.message.id);
+    if (messages.length > 0 && !isLoading) {
+      loadMessages();
     }
   };
 

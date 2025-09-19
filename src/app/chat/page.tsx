@@ -18,6 +18,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Message, User, UserConnection } from "@/types";
+import moment from "moment";
 
 interface ChatConversation {
   id: string;
@@ -344,22 +345,6 @@ function ChatListPageContent() {
     }
   };
 
-  const formatLastMessageTime = (date: Date) => {
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      return "Just now";
-    } else if (diffInHours < 24) {
-      return `${Math.floor(diffInHours)}h ago`;
-    } else if (diffInHours < 168) {
-      // 7 days
-      return `${Math.floor(diffInHours / 24)}d ago`;
-    } else {
-      return date.toLocaleDateString();
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -555,8 +540,8 @@ function ChatListPageContent() {
                           </h3>
                           {conversation.lastMessageTime && (
                             <span className="text-xs text-gray-500">
-                              {formatLastMessageTime(
-                                conversation.lastMessageTime
+                              {moment(conversation.lastMessageTime).format(
+                                "HH:mm"
                               )}
                             </span>
                           )}

@@ -40,7 +40,7 @@ export const uploadProfilePicture = async (userId: string, file: File): Promise<
     } catch (error: unknown) {
         console.error('ImageUploadService: Upload failed:', error);
         console.error('ImageUploadService: Error details:', {
-            code: (error as Error).code || 'unknown',
+            code: (error as { code?: string }).code || 'unknown',
             message: (error as Error).message || 'unknown error',
             stack: (error as Error).stack || 'no stack trace'
         });

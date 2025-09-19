@@ -4,11 +4,11 @@ import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { groupId: string } }
+    { params }: { params: Promise<{ groupId: string }> }
 ) {
     try {
         const { userId } = await request.json();
-        const { groupId } = params;
+        const { groupId } = await params;
 
         if (!userId) {
             return NextResponse.json(

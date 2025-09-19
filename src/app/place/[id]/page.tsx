@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { User, Place, Group } from "@/types";
+import { User, Place, Group, UserConnection } from "@/types";
 import { getCurrentPosition } from "@/lib/geolocation";
 import {
   calculateDistance,
@@ -63,10 +63,16 @@ export default function PlacePage() {
   const [group, setGroup] = useState<Group | null>(null);
   const [isLoadingGroup, setIsLoadingGroup] = useState(false);
 
+  const [connections, setConnections] = useState<UserConnection[]>([]);
+  const [isLoadingConnections, setIsLoadingConnections] = useState(true);
+  const [errorConnections, setErrorConnections] = useState("");
+
   const loadConnectionCounts = useCallback(async () => {
+    console.log("Loading connection counts");
     if (!user) return;
 
     try {
+      setIsLoadingConnections(true);
       const [pendingConnections, acceptedConnections] = await Promise.all([
         connectionService.getPendingConnections(user.uid),
         connectionService.getAcceptedConnections(user.uid),
@@ -74,8 +80,14 @@ export default function PlacePage() {
 
       setPendingConnectionsCount(pendingConnections.length);
       setActiveConnectionsCount(acceptedConnections.length);
+      setConnections([...pendingConnections, ...acceptedConnections]);
     } catch (error) {
       console.error("Error loading connection counts:", error);
+      setErrorConnections(
+        error instanceof Error ? error.message : "Failed to load connections"
+      );
+    } finally {
+      setIsLoadingConnections(false);
     }
   }, [user]);
 
@@ -574,10 +586,6 @@ export default function PlacePage() {
     setNewRoomName("");
   };
 
-  // Function to start monitoring user proximity
-
-  // Function to stop proximity monitoring
-
   const handleLeavePlace = async () => {
     if (!user || !placeId) return;
 
@@ -596,6 +604,42 @@ export default function PlacePage() {
     } catch (error) {
       console.error("Error leaving place:", error);
       setError("Failed to leave place. Please try again.");
+    }
+  };
+
+  const handleAcceptConnection = async (connectionId: string) => {
+    try {
+      await connectionService.acceptConnection(connectionId);
+      loadConnectionCounts(); // Reload to update the list
+    } catch (error) {
+      console.error("Error accepting connection:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to accept connection"
+      );
+    }
+  };
+
+  const handleRejectConnection = async (connectionId: string) => {
+    try {
+      await connectionService.rejectConnection(connectionId);
+      loadConnectionCounts(); // Reload to update the list
+    } catch (error) {
+      console.error("Error rejecting connection:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to reject connection"
+      );
+    }
+  };
+
+  const handleRemoveConnection = async (connectionId: string) => {
+    try {
+      await connectionService.removeConnection(connectionId);
+      loadConnectionCounts(); // Reload to update the list
+    } catch (error) {
+      console.error("Error removing connection:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to remove connection"
+      );
     }
   };
 
@@ -1329,7 +1373,15 @@ export default function PlacePage() {
 
       {/* Connection Manager Modal */}
       {showConnectionManager && (
-        <ConnectionManager onClose={handleConnectionManagerClose} />
+        <ConnectionManager
+          onClose={handleConnectionManagerClose}
+          connections={connections}
+          handleAcceptConnection={handleAcceptConnection}
+          handleRejectConnection={handleRejectConnection}
+          handleRemoveConnection={handleRemoveConnection}
+          isLoading={isLoadingConnections}
+          error={errorConnections}
+        />
       )}
 
       {/* Place Share Modal */}
