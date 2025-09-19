@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import userProfileService, { UserProfile } from "@/lib/userProfileService";
 import { INTEREST_CATEGORIES } from "@/lib/interestsService";
+import ProfilePicture from "./ProfilePicture";
 
 interface ProfileManagerProps {
   onClose: () => void;
@@ -150,6 +151,27 @@ export default function ProfileManager({
           )}
 
           <div className="space-y-6">
+            {/* Profile Picture */}
+            <div className="flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Profile Picture
+              </h3>
+              <ProfilePicture
+                imageUrl={profile.profilePictureUrl}
+                displayName={profile.displayName}
+                size={120}
+                onImageChange={(imageUrl) =>
+                  handleInputChange("profilePictureUrl", imageUrl)
+                }
+                editable={true}
+                loading={saving}
+                className="mb-4"
+              />
+              <p className="text-sm text-gray-500 text-center max-w-xs">
+                Click to upload a new profile picture. Max size 5MB.
+              </p>
+            </div>
+
             {/* Basic Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">

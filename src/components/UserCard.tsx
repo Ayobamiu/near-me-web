@@ -216,6 +216,11 @@ export default function UserCard({
                     {user.occupation}
                   </p>
                 )}
+                {user.bio && (
+                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                    {user.bio}
+                  </p>
+                )}
                 {user.distance !== undefined && (
                   <p className="text-xs text-blue-600 mt-1">
                     {Math.round(user.distance)}m away
