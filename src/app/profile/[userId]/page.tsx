@@ -5,7 +5,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import userProfileService from "@/lib/userProfileService";
 import { User } from "@/types";
-import ProfileViewer from "@/components/ProfileViewer";
 import ConnectionRequestModal from "@/components/ConnectionRequestModal";
 import ChatWindow from "@/components/ChatWindow";
 

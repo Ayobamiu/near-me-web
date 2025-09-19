@@ -10,12 +10,7 @@ import {
   checkUserProximity,
   markUserOutOfRange,
 } from "@/lib/geospatial";
-import {
-  getPlaceUsers,
-  joinPlace,
-  leavePlace,
-  createPlace,
-} from "@/lib/placeService";
+import { getPlaceUsers, joinPlace, leavePlace } from "@/lib/placeService";
 import connectionService from "@/lib/connectionService";
 // import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
 import UserCard from "@/components/UserCard";
@@ -29,7 +24,6 @@ import {
   getDoc,
   onSnapshot,
   collection,
-  setDoc,
   updateDoc,
   serverTimestamp,
   query,
@@ -50,11 +44,6 @@ export default function PlacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [canJoin, setCanJoin] = useState(false);
-  const [userLocation, setUserLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
-  const [isJoining, setIsJoining] = useState(false);
   const [isFirstUser, setIsFirstUser] = useState(false);
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
   const [proximityCheckInterval, setProximityCheckInterval] =
@@ -95,6 +84,123 @@ export default function PlacePage() {
     // Refresh connection counts when manager closes
     loadConnectionCounts();
   };
+  const startProximityMonitoring = useCallback(() => {
+    if (!user || !place?.originLocation) return;
+
+    // Prevent multiple instances
+    if (proximityCheckInterval) {
+      console.log("⚠️ Proximity monitoring already running, skipping");
+      return;
+    }
+
+    console.log("🚀 Starting proximity monitoring for user:", user.uid);
+
+    const interval = setInterval(async () => {
+      try {
+        const position = await getCurrentPosition();
+        const isWithinRange = checkUserProximity(
+          position.lat,
+          position.lng,
+          place.originLocation!.lat,
+          place.originLocation!.lng,
+          100
+        );
+
+        console.log("📍 Proximity check:", {
+          userLat: position.lat,
+          userLng: position.lng,
+          originLat: place.originLocation!.lat,
+          originLng: place.originLocation!.lng,
+          isWithinRange,
+        });
+
+        if (!isWithinRange) {
+          // User moved out of range
+          console.log("❌ User out of range, marking as offline");
+          await markUserOutOfRange(placeId, user.uid);
+          setCanJoin(false);
+          setError(
+            "You've moved too far from the place. Please get closer to rejoin."
+          );
+          clearInterval(interval);
+          setProximityCheckInterval(null);
+        } else {
+          // Update user's location and online status
+          console.log("✅ User within range, updating online status");
+          await updateUserOnlineStatus(placeId, user.uid, true);
+          // setUserLocation({ lat: position.lat, lng: position.lng });
+        }
+      } catch (error) {
+        console.error("Proximity check failed:", error);
+      }
+    }, 30000); // Check every 30 seconds
+
+    setProximityCheckInterval(interval);
+  }, [user, place, proximityCheckInterval, placeId]);
+
+  const loadGroup = useCallback(async () => {
+    if (!place || !user) {
+      return;
+    }
+
+    try {
+      setIsLoadingGroup(true);
+
+      // Check if group exists for this place
+      const groupsRef = collection(db, "groups");
+      const groupQuery = query(
+        groupsRef,
+        where("placeId", "==", placeId),
+        where("isActive", "==", true)
+      );
+
+      const groupSnapshot = await getDocs(groupQuery);
+
+      if (!groupSnapshot.empty) {
+        // Group exists, get it
+        const groupDoc = groupSnapshot.docs[0];
+        const groupData = {
+          id: groupDoc.id,
+          ...groupDoc.data(),
+          createdAt: groupDoc.data().createdAt.toDate(),
+          updatedAt: groupDoc.data().updatedAt.toDate(),
+          lastMessageAt: groupDoc.data().lastMessageAt?.toDate(),
+        } as Group;
+
+        setGroup(groupData);
+
+        // Join the group if user is not already a member
+        if (!groupData.memberIds.includes(user.uid)) {
+          await fetch(`/api/groups/${groupData.id}/join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.uid }),
+          });
+        }
+      } else {
+        // No group exists, create one
+        const response = await fetch("/api/groups/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            placeId: placeId,
+            name: place.name,
+            createdBy: user.uid,
+          }),
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          // Reload the group
+          loadGroup();
+        }
+      }
+    } catch (error) {
+      console.error("Error loading group:", error);
+    } finally {
+      setIsLoadingGroup(false);
+    }
+  }, [place, user, placeId]);
 
   const loadPlaceData = useCallback(async () => {
     try {
@@ -105,7 +211,7 @@ export default function PlacePage() {
       let position = null;
       if (user) {
         position = await getCurrentPosition();
-        setUserLocation({ lat: position.lat, lng: position.lng });
+        // setUserLocation({ lat: position.lat, lng: position.lng });
       }
 
       // Check if place exists
@@ -143,7 +249,7 @@ export default function PlacePage() {
               setIsAlreadyJoined(true);
               setCanJoin(true);
               if (position) {
-                setUserLocation({ lat: position.lat, lng: position.lng });
+                // setUserLocation({ lat: position.lat, lng: position.lng });
               }
               console.log("✅ User already joined this place");
 
@@ -395,69 +501,6 @@ export default function PlacePage() {
     }
   }, [proximityCheckInterval]);
 
-  const loadGroup = useCallback(async () => {
-    if (!place || !user) {
-      return;
-    }
-
-    try {
-      setIsLoadingGroup(true);
-
-      // Check if group exists for this place
-      const groupsRef = collection(db, "groups");
-      const groupQuery = query(
-        groupsRef,
-        where("placeId", "==", placeId),
-        where("isActive", "==", true)
-      );
-
-      const groupSnapshot = await getDocs(groupQuery);
-
-      if (!groupSnapshot.empty) {
-        // Group exists, get it
-        const groupDoc = groupSnapshot.docs[0];
-        const groupData = {
-          id: groupDoc.id,
-          ...groupDoc.data(),
-          createdAt: groupDoc.data().createdAt.toDate(),
-          updatedAt: groupDoc.data().updatedAt.toDate(),
-          lastMessageAt: groupDoc.data().lastMessageAt?.toDate(),
-        } as Group;
-
-        setGroup(groupData);
-
-        // Join the group if user is not already a member
-        if (!groupData.memberIds.includes(user.uid)) {
-          await fetch(`/api/groups/${groupData.id}/join`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user.uid }),
-          });
-        }
-      } else {
-        // No group exists, create one
-        const response = await fetch("/api/groups/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            placeId: placeId,
-            name: place.name,
-            createdBy: user.uid,
-          }),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Reload the group
-          loadGroup();
-        }
-      }
-    } catch (error) {
-      console.error("Error loading group:", error);
-    } finally {
-      setIsLoadingGroup(false);
-    }
-  }, [place, user]);
   // Cleanup on component unmount
   useEffect(() => {
     return () => {
@@ -532,191 +575,8 @@ export default function PlacePage() {
   };
 
   // Function to start monitoring user proximity
-  const startProximityMonitoring = () => {
-    if (!user || !place?.originLocation) return;
-
-    // Prevent multiple instances
-    if (proximityCheckInterval) {
-      console.log("⚠️ Proximity monitoring already running, skipping");
-      return;
-    }
-
-    console.log("🚀 Starting proximity monitoring for user:", user.uid);
-
-    const interval = setInterval(async () => {
-      try {
-        const position = await getCurrentPosition();
-        const isWithinRange = checkUserProximity(
-          position.lat,
-          position.lng,
-          place.originLocation!.lat,
-          place.originLocation!.lng,
-          100
-        );
-
-        console.log("📍 Proximity check:", {
-          userLat: position.lat,
-          userLng: position.lng,
-          originLat: place.originLocation!.lat,
-          originLng: place.originLocation!.lng,
-          isWithinRange,
-        });
-
-        if (!isWithinRange) {
-          // User moved out of range
-          console.log("❌ User out of range, marking as offline");
-          await markUserOutOfRange(placeId, user.uid);
-          setCanJoin(false);
-          setError(
-            "You've moved too far from the place. Please get closer to rejoin."
-          );
-          clearInterval(interval);
-          setProximityCheckInterval(null);
-        } else {
-          // Update user's location and online status
-          console.log("✅ User within range, updating online status");
-          await updateUserOnlineStatus(placeId, user.uid, true);
-          setUserLocation({ lat: position.lat, lng: position.lng });
-        }
-      } catch (error) {
-        console.error("Proximity check failed:", error);
-      }
-    }, 30000); // Check every 30 seconds
-
-    setProximityCheckInterval(interval);
-  };
 
   // Function to stop proximity monitoring
-
-  const handleJoinPlace = async () => {
-    if (!user || !userLocation || !place) return;
-
-    setIsJoining(true);
-
-    try {
-      if (isFirstUser) {
-        // First user - create the place with their location as origin
-        await createPlace({
-          placeId,
-          name: `Room ${placeId}`,
-          qrCode: placeId,
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-          createdBy: user.uid,
-        });
-
-        // Get user profile from Firestore, create if doesn't exist
-        const userProfileDoc = await getDoc(doc(db, "userProfiles", user.uid));
-        let userProfile;
-
-        if (userProfileDoc.exists()) {
-          userProfile = userProfileDoc.data();
-        } else {
-          // Create profile for anonymous users
-          userProfile = {
-            id: user.uid,
-            displayName: user.displayName || "Anonymous User",
-            email: user.email || "anonymous@example.com",
-            profilePictureUrl: user.photoURL || "",
-            interests: [],
-            bio: "First person here!",
-            createdAt: new Date(),
-            isOnline: true,
-          };
-          await setDoc(doc(db, "userProfiles", user.uid), userProfile);
-          console.log("✅ Anonymous user profile created in Firestore");
-        }
-
-        // Add user to the place via API
-        await joinPlace(placeId, {
-          userId: user.uid,
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-        });
-
-        setIsFirstUser(false);
-        setPlace((prev) =>
-          prev
-            ? {
-                ...prev,
-                originLocation: userLocation,
-              }
-            : null
-        );
-
-        // Set up real-time listener for users in this place
-        onSnapshot(
-          collection(db, "places", placeId, "users"),
-          async (snapshot) => {
-            console.log(
-              "📡 First user - Real-time update received:",
-              snapshot.size,
-              "users"
-            );
-
-            if (userLocation) {
-              try {
-                // Fetch users with their profiles via API
-                const response = await getPlaceUsers(
-                  placeId,
-                  userLocation.lat,
-                  userLocation.lng
-                );
-                console.log(
-                  "✅ First user - Final users list:",
-                  response.users.length,
-                  "users"
-                );
-                setUsers(response.users);
-              } catch (error) {
-                console.error("Error fetching users:", error);
-              }
-            }
-          }
-        );
-
-        // Start proximity monitoring for first user
-        startProximityMonitoring();
-      } else {
-        // Get user profile from Firestore, create if doesn't exist
-        const userProfileDoc = await getDoc(doc(db, "userProfiles", user.uid));
-        let userProfile;
-
-        if (userProfileDoc.exists()) {
-          userProfile = userProfileDoc.data();
-        } else {
-          // Create profile for anonymous users
-          userProfile = {
-            id: user.uid,
-            displayName: user.displayName || "Anonymous User",
-            email: user.email || "anonymous@example.com",
-            profilePictureUrl: user.photoURL || "",
-            interests: [],
-            bio: "Just joined!",
-            createdAt: new Date(),
-            isOnline: true,
-          };
-          await setDoc(doc(db, "userProfiles", user.uid), userProfile);
-          console.log("✅ Anonymous user profile created in Firestore");
-        }
-
-        // Subsequent user - add to existing place via API
-        await joinPlace(placeId, {
-          userId: user.uid,
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-        });
-
-        // Start proximity monitoring for subsequent users
-        startProximityMonitoring();
-      }
-    } catch (error) {
-      console.error("Error joining place:", error);
-      setError("Failed to join place. Please try again.");
-    } finally {
-      setIsJoining(false);
-    }
-  };
 
   const handleLeavePlace = async () => {
     if (!user || !placeId) return;
@@ -805,7 +665,6 @@ export default function PlacePage() {
     canJoin,
     isAlreadyJoined,
     isFirstUser,
-    isJoining,
   });
 
   if (geolocationError) {

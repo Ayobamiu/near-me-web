@@ -17,7 +17,7 @@ import {
   limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { User, Message } from "@/types";
+import { Message, User, UserConnection } from "@/types";
 
 interface ChatConversation {
   id: string;
@@ -41,7 +41,7 @@ function ChatListPageContent() {
 
   // Conversation view state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
@@ -88,7 +88,7 @@ function ChatListPageContent() {
         );
 
         // Helper function to process connections
-        const processConnections = async (connections: any[]) => {
+        const processConnections = async (connections: UserConnection[]) => {
           console.log(
             "🔄 Processing connections:",
             connections.length,
@@ -97,9 +97,9 @@ function ChatListPageContent() {
           const conversationPromises = connections.map(async (connection) => {
             // Get the other user's ID
             const otherUserId =
-              connection.userId === user.uid
-                ? connection.connectedUserId
-                : connection.userId;
+              connection.user.id === user.uid
+                ? connection.connection.id
+                : connection.user.id;
             if (!otherUserId) return null;
 
             // Get the other user's profile
@@ -168,12 +168,14 @@ function ChatListPageContent() {
         };
 
         // Listen to both queries
-        let connections1: any[] = [];
-        let connections2: any[] = [];
+        let connections1: UserConnection[] = [];
+        let connections2: UserConnection[] = [];
         let hasProcessed = false;
 
         const unsubscribe1 = onSnapshot(q1, async (snapshot1) => {
-          connections1 = snapshot1.docs.map((doc) => doc.data());
+          connections1 = snapshot1.docs.map(
+            (doc) => doc.data() as UserConnection
+          );
           console.log(
             "📡 Query 1 (userId) results:",
             connections1.length,
@@ -187,10 +189,10 @@ function ChatListPageContent() {
                 index ===
                 self.findIndex(
                   (c) =>
-                    (c.userId === connection.userId &&
-                      c.connectedUserId === connection.connectedUserId) ||
-                    (c.userId === connection.connectedUserId &&
-                      c.connectedUserId === connection.userId)
+                    (c.user.id === connection.user.id &&
+                      c.connection.id === connection.connection.id) ||
+                    (c.user.id === connection.connection.id &&
+                      c.connection.id === connection.connection.id)
                 )
             );
             await processConnections(uniqueConnections);
@@ -198,7 +200,9 @@ function ChatListPageContent() {
         });
 
         const unsubscribe2 = onSnapshot(q2, async (snapshot2) => {
-          connections2 = snapshot2.docs.map((doc) => doc.data());
+          connections2 = snapshot2.docs.map(
+            (doc) => doc.data() as UserConnection
+          );
           console.log(
             "📡 Query 2 (connectedUserId) results:",
             connections2.length,
@@ -212,10 +216,10 @@ function ChatListPageContent() {
               index ===
               self.findIndex(
                 (c) =>
-                  (c.userId === connection.userId &&
-                    c.connectedUserId === connection.connectedUserId) ||
-                  (c.userId === connection.connectedUserId &&
-                    c.connectedUserId === connection.userId)
+                  (c.user.id === connection.user.id &&
+                    c.connection.id === connection.connection.id) ||
+                  (c.user.id === connection.connection.id &&
+                    c.connection.id === connection.user.id)
               )
           );
           await processConnections(uniqueConnections);
@@ -246,7 +250,7 @@ function ChatListPageContent() {
         const userProfileSnapshot = await getDoc(userProfileRef);
 
         if (userProfileSnapshot.exists()) {
-          setSelectedUser(userProfileSnapshot.data());
+          setSelectedUser(userProfileSnapshot.data() as User);
         } else {
           console.error("Selected user profile not found");
           setSelectedUser(null);

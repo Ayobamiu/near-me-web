@@ -171,7 +171,7 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
     }
   };
 
-  const formatMessageTime = (date: Date | string | any) => {
+  const formatMessageTime = (date: Date | string | unknown) => {
     try {
       // Handle different date formats
       let dateObj: Date;

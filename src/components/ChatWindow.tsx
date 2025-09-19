@@ -7,7 +7,14 @@ import MessageInput from "./MessageInput";
 import chatService from "@/lib/chatService";
 import { useAuth } from "@/contexts/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, query, where, orderBy, onSnapshot, limit } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  limit,
+} from "firebase/firestore";
 import userProfileService from "@/lib/userProfileService";
 
 interface ChatWindowProps {
@@ -29,7 +36,6 @@ export default function ChatWindow({
   const [currentConversation, setCurrentConversation] =
     useState<Conversation | null>(conversation || null);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // Load messages when component mounts or conversation changes
@@ -85,11 +91,11 @@ export default function ChatWindow({
 
     try {
       // Create Firestore query for messages
-      const messagesRef = collection(db, 'messages');
+      const messagesRef = collection(db, "messages");
       const messagesQuery = query(
         messagesRef,
-        where('conversationId', '==', currentConversation.id),
-        orderBy('createdAt', 'asc'), // Get messages in chronological order
+        where("conversationId", "==", currentConversation.id),
+        orderBy("createdAt", "asc"), // Get messages in chronological order
         limit(50) // Limit to last 50 messages
       );
 
@@ -102,20 +108,25 @@ export default function ChatWindow({
             const userIdsToFetch = new Set<string>();
 
             // Collect all sender IDs
-            snapshot.docs.forEach(doc => {
+            snapshot.docs.forEach((doc) => {
               const messageData = doc.data();
               userIdsToFetch.add(messageData.senderId);
             });
 
             // Fetch user profiles
-            const userProfiles = await userProfileService.getManyUserProfiles(Array.from(userIdsToFetch));
+            const userProfiles = await userProfileService.getManyUserProfiles(
+              Array.from(userIdsToFetch)
+            );
             const userMap = new Map<string, User>();
-            userProfiles.forEach(profile => {
-              userMap.set(profile.id, userProfileService.convertToUser(profile, { lat: 0, lng: 0 }, 0));
+            userProfiles.forEach((profile) => {
+              userMap.set(
+                profile.id,
+                userProfileService.convertToUser(profile, { lat: 0, lng: 0 }, 0)
+              );
             });
 
             // Build chat messages
-            snapshot.docs.forEach(doc => {
+            snapshot.docs.forEach((doc) => {
               const messageData = doc.data();
               const message = {
                 id: doc.id,
@@ -166,7 +177,7 @@ export default function ChatWindow({
     }
   };
 
-  const loadMessages = async (lastMessageId?: string) => {
+  const loadMessages = async () => {
     // For now, we'll use the real-time listener for all message loading
     // This function is kept for compatibility but redirects to real-time listener
     setupRealtimeListener();
@@ -183,7 +194,7 @@ export default function ChatWindow({
 
       // If no conversation exists, create one by sending the first message
       if (!currentConversation) {
-        const newMessage = await chatService.sendMessage(
+        await chatService.sendMessage(
           {
             ...messageRequest,
             receiverId: otherUser.id,

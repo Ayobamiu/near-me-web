@@ -64,7 +64,7 @@ export default function QRBadge({ onClose }: QRBadgeProps) {
           text: `Scan my QR code to connect on NearMe!`,
           url: profileUrl,
         });
-      } catch (error) {
+      } catch {
         console.log("Share cancelled");
       }
     } else {

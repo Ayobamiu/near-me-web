@@ -49,7 +49,7 @@ export default function PlaceShareModal({
           text: `I'm at ${place.name}. Join me on NearMe!`,
           url: shareUrl,
         });
-      } catch (error) {
+      } catch {
         console.log("Share cancelled");
       }
     } else {

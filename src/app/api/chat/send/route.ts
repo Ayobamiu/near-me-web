@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
-import { SendMessageRequest, Message, Conversation } from '@/types';
+import { SendMessageRequest, Message } from '@/types';
 
 export async function POST(request: NextRequest) {
     try {

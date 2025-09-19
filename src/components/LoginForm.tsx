@@ -4,26 +4,13 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginForm() {
-  const { signIn, signUp, signInWithEmail } = useAuth();
+  const { signUp, signInWithEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
-
-  const handleAnonymousSignIn = async () => {
-    setIsLoading(true);
-    setError("");
-    try {
-      await signIn();
-    } catch (error) {
-      console.error("Sign in error:", error);
-      setError("Failed to sign in. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

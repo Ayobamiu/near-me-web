@@ -15,13 +15,13 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Message } from "@/types";
+import { Message, User } from "@/types";
 
 export default function ChatConversationPage() {
   const router = useRouter();
   const params = useParams();
   const { user, loading } = useAuth();
-  const [otherUser, setOtherUser] = useState<any>(null);
+  const [otherUser, setOtherUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function ChatConversationPage() {
         const userProfileSnapshot = await getDoc(userProfileRef);
 
         if (userProfileSnapshot.exists()) {
-          setOtherUser(userProfileSnapshot.data());
+          setOtherUser(userProfileSnapshot.data() as User);
         } else {
           console.error("Other user profile not found");
         }
@@ -153,7 +153,7 @@ export default function ChatConversationPage() {
             User Not Found
           </h2>
           <p className="text-gray-600 mb-6">
-            The user you're trying to chat with doesn't exist.
+            The user you&apos;re trying to chat with doesn&apos;t exist.
           </p>
           <button
             onClick={() => router.push("/chat")}

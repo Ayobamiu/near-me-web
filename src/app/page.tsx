@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import QRScanner from "@/components/QRScanner";
 import QRBadge from "@/components/QRBadge";
@@ -13,11 +13,7 @@ import {
   getDoc,
   setDoc,
   collection,
-  query,
-  where,
   getDocs,
-  orderBy,
-  limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { createPlace, joinPlace } from "@/lib/placeService";
@@ -49,7 +45,7 @@ export default function Home() {
   const router = useRouter();
 
   // Load recent places for the user
-  const loadRecentPlaces = async () => {
+  const loadRecentPlaces = useCallback(async () => {
     if (!user) return;
 
     setIsLoadingRecentPlaces(true);
@@ -89,7 +85,8 @@ export default function Home() {
       // Sort by last joined date (most recent first) and limit to 5
       userPlaces.sort(
         (a, b) =>
-          (b as any).lastJoinedAt.getTime() - (a as any).lastJoinedAt.getTime()
+          (b as Place & { lastJoinedAt: Date }).lastJoinedAt.getTime() -
+          (a as Place & { lastJoinedAt: Date }).lastJoinedAt.getTime()
       );
       setRecentPlaces(userPlaces.slice(0, 5));
     } catch (error) {
@@ -97,7 +94,7 @@ export default function Home() {
     } finally {
       setIsLoadingRecentPlaces(false);
     }
-  };
+  }, [user]);
 
   // Check for connection intent after login
   useEffect(() => {
@@ -150,7 +147,7 @@ export default function Home() {
       // Load recent places
       loadRecentPlaces();
     }
-  }, [user, loading]);
+  }, [user, loading, loadRecentPlaces]);
 
   // Check for success message in URL
   useEffect(() => {
@@ -516,7 +513,7 @@ export default function Home() {
                       <p className="text-xs text-gray-500">
                         Last joined:{" "}
                         {new Date(
-                          (place as any).lastJoinedAt
+                          (place as Place & { lastJoinedAt: Date }).lastJoinedAt
                         ).toLocaleDateString()}
                       </p>
                     </div>

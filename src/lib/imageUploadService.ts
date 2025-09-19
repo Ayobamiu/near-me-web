@@ -37,12 +37,12 @@ export const uploadProfilePicture = async (userId: string, file: File): Promise<
 
         console.log('ImageUploadService: Upload successful, URL:', downloadURL);
         return downloadURL;
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('ImageUploadService: Upload failed:', error);
         console.error('ImageUploadService: Error details:', {
-            code: error.code,
-            message: error.message,
-            stack: error.stack
+            code: (error as Error).code || 'unknown',
+            message: (error as Error).message || 'unknown error',
+            stack: (error as Error).stack || 'no stack trace'
         });
 
         throw error;
@@ -66,7 +66,7 @@ export const deleteProfilePicture = async (imageUrl: string): Promise<void> => {
         const imageRef = ref(storage, path);
         await deleteObject(imageRef);
         console.log('ImageUploadService: Image deleted successfully');
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('ImageUploadService: Delete failed:', error);
         throw error;
     }
