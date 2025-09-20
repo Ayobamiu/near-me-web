@@ -15,6 +15,7 @@ import { Place } from "@/types";
 import { useLocation } from "@/hooks/useLocation";
 import NearbyPlacesList from "@/components/NearbyPlacesList";
 import UserHeader from "@/components/UserHeader";
+import ProfileManager from "@/components/ProfileManager";
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -47,6 +48,7 @@ export default function Home() {
   } | null>(null);
   const [recentPlaces, setRecentPlaces] = useState<Place[]>([]);
   const [isLoadingRecentPlaces, setIsLoadingRecentPlaces] = useState(false);
+  const [showProfileManager, setShowProfileManager] = useState(false);
   const router = useRouter();
 
   // Load recent places for the user
@@ -190,6 +192,10 @@ export default function Home() {
     e.preventDefault();
     if (!qrCode.trim()) return;
     await handleJoinPlace(qrCode.trim());
+  };
+
+  const handleEditProfile = () => {
+    setShowProfileManager(true);
   };
 
   const handleJoinPlace = async (placeId: string) => {
@@ -454,6 +460,7 @@ export default function Home() {
         showDiscoverButton={true}
         onMessagesClick={() => router.push("/chat")}
         showMessagesButton={true}
+        onEditProfileClick={handleEditProfile}
       />
 
       <div className="max-w-md mx-auto px-4 py-8">
@@ -689,6 +696,17 @@ export default function Home() {
 
         {showQRBadge && <QRBadge onClose={() => setShowQRBadge(false)} />}
       </div>
+
+      {/* Profile Manager Modal */}
+      {showProfileManager && (
+        <ProfileManager
+          onClose={() => setShowProfileManager(false)}
+          onSave={() => {
+            setShowProfileManager(false);
+            // Optionally refresh recent places or other data
+          }}
+        />
+      )}
     </div>
   );
 }
