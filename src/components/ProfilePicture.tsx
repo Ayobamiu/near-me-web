@@ -108,7 +108,7 @@ export default function ProfilePicture({
 
         {/* Edit overlay for editable images */}
         {editable && !isLoading && (
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all duration-200">
+          <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-30 rounded-full flex items-center justify-center transition-all duration-200">
             <svg
               className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
               fill="none"

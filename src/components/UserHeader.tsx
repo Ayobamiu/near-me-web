@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import useUserProfile from "@/hooks/useUserProfile";
 
 interface UserHeaderProps {
   onDiscoverClick: () => void;
@@ -20,6 +21,7 @@ export default function UserHeader({
   onEditProfileClick,
 }: UserHeaderProps) {
   const { user, signOut } = useAuth();
+  const { profile } = useUserProfile();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -61,10 +63,21 @@ export default function UserHeader({
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition-colors"
           >
-            <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-              {user.displayName?.charAt(0).toUpperCase() ||
-                user.email?.charAt(0).toUpperCase() ||
-                "U"}
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
+              {profile?.profilePictureUrl ? (
+                <img
+                  src={profile.profilePictureUrl}
+                  alt={profile.displayName || "User"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>
+                  {profile?.displayName?.charAt(0).toUpperCase() ||
+                    user?.displayName?.charAt(0).toUpperCase() ||
+                    user?.email?.charAt(0).toUpperCase() ||
+                    "U"}
+                </span>
+              )}
             </div>
             <div className="text-left min-w-0 flex-1">
               <p className="text-sm font-medium text-gray-900 truncate">

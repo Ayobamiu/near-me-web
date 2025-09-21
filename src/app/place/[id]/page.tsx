@@ -32,9 +32,11 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
+import useUserProfile from "@/hooks/useUserProfile";
 
 export default function PlacePage() {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { profile } = useUserProfile();
   const params = useParams();
   const router = useRouter();
   const placeId = params.id as string;
@@ -1101,15 +1103,16 @@ export default function PlacePage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-                  {user?.photoURL ? (
+                  {profile?.profilePictureUrl ? (
                     <img
-                      src={user.photoURL}
-                      alt={user.displayName || "User"}
+                      src={profile.profilePictureUrl}
+                      alt={profile.displayName || "User"}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <span className="text-blue-600 font-semibold text-sm">
-                      {user?.displayName?.charAt(0) ||
+                      {profile?.displayName?.charAt(0) ||
+                        user?.displayName?.charAt(0) ||
                         user?.email?.charAt(0) ||
                         "A"}
                     </span>
