@@ -17,6 +17,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
     
+    // Allow public read/write access to status for MVP (Firebase presence solution)
+    match /status/{userId} {
+      allow read, write: if true;
+    }
+    
     // Allow public read/write access to profiles for MVP
     match /profiles/{userId} {
       allow read, write: if true;

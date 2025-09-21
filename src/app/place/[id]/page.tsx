@@ -36,11 +36,13 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePresence } from "@/contexts/PresenceContext";
 import useUserProfile from "@/hooks/useUserProfile";
 
 export default function PlacePage() {
   const { user, signOut, loading: authLoading } = useAuth();
   const { profile } = useUserProfile();
+  const { updateCurrentPlace, updateLocation } = usePresence();
   const params = useParams();
   const router = useRouter();
   const placeId = params.id as string;
@@ -358,6 +360,10 @@ export default function PlacePage() {
                 });
                 console.log("✅ User auto-joined to place successfully");
 
+                // Update global presence
+                await updateCurrentPlace(placeId);
+                await updateLocation(position.lat, position.lng);
+
                 // Clear the flag
                 sessionStorage.removeItem("cameFromHomepage");
 
@@ -604,6 +610,9 @@ export default function PlacePage() {
       // Call the leave API
       await leavePlace(placeId, { userId: user.uid });
       console.log("✅ Successfully left place");
+
+      // Update global presence
+      await updateCurrentPlace(null);
 
       // Stop proximity monitoring
       stopProximityMonitoring();

@@ -7,6 +7,7 @@ import ConnectionRequestModal from "./ConnectionRequestModal";
 import ChatWindow from "./ChatWindow";
 import connectionService from "@/lib/connectionService";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePresence } from "@/contexts/PresenceContext";
 
 interface UserCardProps {
   user: User;
@@ -22,7 +23,14 @@ export default function UserCard({
   onViewProfile,
 }: UserCardProps) {
   const { user: currentUser } = useAuth();
+  const { onlineUsers } = usePresence();
   const [showProfileViewer, setShowProfileViewer] = useState(false);
+
+  // Check if user is globally online
+  const isGloballyOnline = onlineUsers.some(
+    (onlineUser) => onlineUser.id === user.id
+  );
+
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [showChatWindow, setShowChatWindow] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<Connection | null>(
@@ -203,9 +211,18 @@ export default function UserCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-gray-900 truncate">
-                  {user.displayName}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-gray-900 truncate">
+                    {user.displayName}
+                  </h3>
+                  {/* Global Online Status Indicator */}
+                  {isGloballyOnline && (
+                    <div
+                      className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"
+                      title="Online"
+                    />
+                  )}
+                </div>
                 {user.headline && (
                   <p className="text-xs text-gray-600 truncate mt-1">
                     {user.headline}
@@ -244,16 +261,18 @@ export default function UserCard({
               </div>
 
               {/* Online Status */}
-              <div className="flex items-center space-x-1 ml-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    user.isOnline ? "bg-green-500" : "bg-gray-400"
-                  }`}
-                ></div>
-                <span className="text-xs text-gray-500">
-                  {user.isOnline ? "Online" : "Offline"}
-                </span>
-              </div>
+              {user.id !== currentUser?.uid && (
+                <div className="flex items-center space-x-1 ml-2">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      isGloballyOnline ? "bg-green-500" : "bg-gray-400"
+                    }`}
+                  ></div>
+                  <span className="text-xs text-gray-500">
+                    {isGloballyOnline ? "Online" : "Offline"}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Interests */}

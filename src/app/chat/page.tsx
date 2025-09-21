@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -8,7 +8,6 @@ import {
   getDoc,
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
   getDocs,
@@ -19,6 +18,7 @@ import { Message, User, UserConnection } from "@/types";
 import connectionService from "@/lib/connectionService";
 import chatService from "@/lib/chatService";
 import moment from "moment";
+import { usePresence } from "@/contexts/PresenceContext";
 
 interface ChatConversation {
   id: string;
@@ -28,11 +28,11 @@ interface ChatConversation {
   lastMessage?: string;
   lastMessageTime?: Date;
   unreadCount: number;
-  isOnline: boolean;
 }
 
 function ChatListPageContent() {
   const { user, loading } = useAuth();
+  const { onlineUsers } = usePresence();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
@@ -57,6 +57,10 @@ function ChatListPageContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     mobileMessagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const selectedUserIsGloballyOnline = useMemo(() => {
+    return onlineUsers.some((onlineUser) => onlineUser.id === selectedUserId);
+  }, [onlineUsers, selectedUserId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -159,7 +163,6 @@ function ChatListPageContent() {
             lastMessage,
             lastMessageTime,
             unreadCount,
-            isOnline: userProfile.isOnline || false,
           };
         });
 
@@ -464,63 +467,68 @@ function ChatListPageContent() {
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase())
                 )
-                .map((conversation) => (
-                  <div
-                    key={conversation.id}
-                    onClick={() => handleChatClick(conversation)}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                      selectedUserId === conversation.userId
-                        ? "bg-blue-50 border-r-2 border-blue-500"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                          {conversation.userPhotoUrl ? (
-                            <img
-                              src={conversation.userPhotoUrl}
-                              alt={conversation.userName}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-gray-600 font-semibold text-lg">
-                              {conversation.userName.charAt(0)}
-                            </span>
+                .map((conversation) => {
+                  const isGloballyOnline = onlineUsers.some(
+                    (onlineUser) => onlineUser.id === conversation.userId
+                  );
+                  return (
+                    <div
+                      key={conversation.id}
+                      onClick={() => handleChatClick(conversation)}
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        selectedUserId === conversation.userId
+                          ? "bg-blue-50 border-r-2 border-blue-500"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                            {conversation.userPhotoUrl ? (
+                              <img
+                                src={conversation.userPhotoUrl}
+                                alt={conversation.userName}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-gray-600 font-semibold text-lg">
+                                {conversation.userName.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          {isGloballyOnline && (
+                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
                           )}
                         </div>
-                        {conversation.isOnline && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                        )}
-                      </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-medium text-gray-900 truncate">
-                            {conversation.userName}
-                          </h3>
-                          {conversation.lastMessageTime && (
-                            <span className="text-xs text-gray-500">
-                              {moment(conversation.lastMessageTime).format(
-                                "HH:mm"
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className="text-sm text-gray-500 truncate">
-                            {conversation.lastMessage || "No messages yet"}
-                          </p>
-                          {conversation.unreadCount > 0 && (
-                            <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                              {conversation.unreadCount}
-                            </span>
-                          )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-sm font-medium text-gray-900 truncate">
+                              {conversation.userName}
+                            </h3>
+                            {conversation.lastMessageTime && (
+                              <span className="text-xs text-gray-500">
+                                {moment(conversation.lastMessageTime).format(
+                                  "HH:mm"
+                                )}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-sm text-gray-500 truncate">
+                              {conversation.lastMessage || "No messages yet"}
+                            </p>
+                            {conversation.unreadCount > 0 && (
+                              <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                                {conversation.unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           )}
         </div>
@@ -556,13 +564,13 @@ function ChatListPageContent() {
                       <div className="flex items-center space-x-1">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            selectedUser.isOnline
+                            selectedUserIsGloballyOnline
                               ? "bg-green-500"
                               : "bg-gray-400"
                           }`}
                         ></div>
                         <span className="text-xs text-gray-500">
-                          {selectedUser.isOnline ? "Online" : "Offline"}
+                          {selectedUserIsGloballyOnline ? "Online" : "Offline"}
                         </span>
                       </div>
                     </div>
@@ -701,13 +709,13 @@ function ChatListPageContent() {
                       <div className="flex items-center space-x-1">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            selectedUser.isOnline
+                            selectedUserIsGloballyOnline
                               ? "bg-green-500"
                               : "bg-gray-400"
                           }`}
                         ></div>
                         <span className="text-xs text-gray-500">
-                          {selectedUser.isOnline ? "Online" : "Offline"}
+                          {selectedUserIsGloballyOnline ? "Online" : "Offline"}
                         </span>
                       </div>
                     </div>
