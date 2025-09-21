@@ -16,6 +16,7 @@ import {
   doc,
 } from "firebase/firestore";
 import userProfileService from "@/lib/userProfileService";
+import { usePresence } from "@/contexts/PresenceContext";
 
 interface ChatWindowProps {
   otherUser: User;
@@ -24,6 +25,7 @@ interface ChatWindowProps {
 
 export default function ChatWindow({ otherUser, onClose }: ChatWindowProps) {
   const { user: currentUser } = useAuth();
+  const { onlineUsers } = usePresence();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
@@ -31,6 +33,10 @@ export default function ChatWindow({ otherUser, onClose }: ChatWindowProps) {
   const [conversationId, setConversationId] = useState<string>("");
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
+
+  const otherUserIsGloballyOnline = onlineUsers.some(
+    (onlineUser) => onlineUser.id === otherUser.id
+  );
 
   // Load messages when component mounts or conversation changes
   useEffect(() => {
@@ -244,7 +250,7 @@ export default function ChatWindow({ otherUser, onClose }: ChatWindowProps) {
                 {otherUser.displayName}
               </h3>
               <p className="text-sm text-gray-500">
-                {otherUser.isOnline ? "Online" : "Offline"}
+                {otherUserIsGloballyOnline ? "Online" : "Offline"}
               </p>
             </div>
           </div>
