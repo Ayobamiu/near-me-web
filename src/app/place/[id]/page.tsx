@@ -10,7 +10,11 @@ import {
   checkUserProximity,
   markUserOutOfRange,
 } from "@/lib/geospatial";
-import { getPlaceUsers, joinPlace, leavePlace } from "@/lib/placeService";
+import {
+  getPlaceUsersCategorized,
+  joinPlace,
+  leavePlace,
+} from "@/lib/placeService";
 import connectionService from "@/lib/connectionService";
 // import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
 import UserCard from "@/components/UserCard";
@@ -42,7 +46,8 @@ export default function PlacePage() {
   const placeId = params.id as string;
 
   const [place, setPlace] = useState<Place | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
+  const [usersInRange, setUsersInRange] = useState<User[]>([]);
+  const [usersOutOfRange, setUsersOutOfRange] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [canJoin, setCanJoin] = useState(false);
@@ -306,16 +311,17 @@ export default function PlacePage() {
                   if (placeData.originLocation) {
                     try {
                       // Fetch users with their profiles via API
-                      const response = await getPlaceUsers(
+                      const response = await getPlaceUsersCategorized(
                         placeId,
                         placeData.originLocation.lat,
                         placeData.originLocation.lng
                       );
                       console.log(
                         "🔍 Fetched users from API:",
-                        response.users.length
+                        `In range: ${response.usersInRange.length}, Out of range: ${response.usersOutOfRange.length}`
                       );
-                      setUsers(response.users);
+                      setUsersInRange(response.usersInRange);
+                      setUsersOutOfRange(response.usersOutOfRange);
                     } catch (error) {
                       console.error("Error fetching users:", error);
                     }
@@ -382,12 +388,13 @@ export default function PlacePage() {
 
                     if (placeData.originLocation) {
                       try {
-                        const response = await getPlaceUsers(
+                        const response = await getPlaceUsersCategorized(
                           placeId,
                           placeData.originLocation.lat,
                           placeData.originLocation.lng
                         );
-                        setUsers(response.users);
+                        setUsersInRange(response.usersInRange);
+                        setUsersOutOfRange(response.usersOutOfRange);
                       } catch (error) {
                         console.error("Error fetching users:", error);
                       }
@@ -445,17 +452,17 @@ export default function PlacePage() {
                 if (placeData.originLocation) {
                   try {
                     // Fetch users with their profiles via API
-                    const response = await getPlaceUsers(
+                    const response = await getPlaceUsersCategorized(
                       placeId,
                       placeData.originLocation.lat,
                       placeData.originLocation.lng
                     );
                     console.log(
                       "✅ Final users list:",
-                      response.users.length,
-                      "users"
+                      `In range: ${response.usersInRange.length}, Out of range: ${response.usersOutOfRange.length}`
                     );
-                    setUsers(response.users);
+                    setUsersInRange(response.usersInRange);
+                    setUsersOutOfRange(response.usersOutOfRange);
                   } catch (error) {
                     console.error("Error fetching users:", error);
                   }
@@ -1047,7 +1054,7 @@ export default function PlacePage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">People Nearby</span>
                 <span className="text-sm font-semibold text-blue-600">
-                  {users.length}
+                  {usersInRange.length + usersOutOfRange.length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -1259,7 +1266,7 @@ export default function PlacePage() {
                       : "text-gray-500 border-transparent hover:text-gray-700"
                   }`}
                 >
-                  People ({users.length})
+                  People ({usersInRange.length + usersOutOfRange.length})
                 </button>
               </div>
               <span className="text-sm text-gray-500">
@@ -1267,7 +1274,7 @@ export default function PlacePage() {
                   ? group
                     ? `${group.memberIds.length} members`
                     : "Loading..."
-                  : `${users.length} people within 100m`}
+                  : `${usersInRange.length} currently here, ${usersOutOfRange.length} were here`}
               </span>
             </div>
           </div>
@@ -1311,7 +1318,7 @@ export default function PlacePage() {
                 </div>
               )
             ) : // People Tab
-            users.length === 0 ? (
+            usersInRange.length === 0 && usersOutOfRange.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-4">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                   <svg
@@ -1340,15 +1347,53 @@ export default function PlacePage() {
                 </p>
               </div>
             ) : (
-              <div className="p-2 lg:p-4 space-y-2">
-                {users.map((userItem) => (
-                  <UserCard
-                    key={userItem.id}
-                    user={userItem}
-                    showConnectionButton={userItem.id !== user?.uid}
-                    onViewProfile={handleViewProfile}
-                  />
-                ))}
+              <div className="p-2 lg:p-4 space-y-4">
+                {/* Users Currently Here */}
+                {usersInRange.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                      <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                      Currently Here ({usersInRange.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {usersInRange.map((userItem) => (
+                        <UserCard
+                          key={userItem.id}
+                          user={userItem}
+                          showConnectionButton={userItem.id !== user?.uid}
+                          onViewProfile={handleViewProfile}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Users Who Were Here */}
+                {usersOutOfRange.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-3 flex items-center">
+                      <span className="w-3 h-3 bg-gray-400 rounded-full mr-2"></span>
+                      Were Here ({usersOutOfRange.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {usersOutOfRange.map((userItem) => (
+                        <UserCard
+                          key={userItem.id}
+                          user={userItem}
+                          showConnectionButton={userItem.id !== user?.uid}
+                          onViewProfile={handleViewProfile}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No users message */}
+                {usersInRange.length === 0 && usersOutOfRange.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No users have visited this place yet.</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

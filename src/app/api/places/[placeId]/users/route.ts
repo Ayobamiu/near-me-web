@@ -26,13 +26,14 @@ export async function GET(
         const usersRef = collection(db, 'places', placeId, 'users');
         const usersSnapshot = await getDocs(usersRef);
 
-        const users: User[] = [];
+        const usersInRange: User[] = [];
+        const usersOutOfRange: User[] = [];
 
         for (const userDoc of usersSnapshot.docs) {
             const userData = userDoc.data();
 
-            // Only process online users within range
-            if (userData.isOnline && !userData.outOfRange && userData.location) {
+            // Process all users who have been at the place (regardless of current status)
+            if (userData.location) {
                 const distance = calculateDistance(
                     userData.location.lat,
                     userData.location.lng,
@@ -40,39 +41,38 @@ export async function GET(
                     originLng
                 );
 
+                // Fetch user profile using the service
+                const userProfile = await userProfileService.getUserProfile(userData.userId);
 
-                if (distance <= 100) {
-                    // Fetch user profile using the service
+                if (userProfile) {
+                    // Convert UserProfile to User
+                    const user = userProfileService.convertToUser(
+                        userProfile,
+                        userData.location,
+                        distance
+                    );
+                    user.joinedAt = userData.joinedAt?.toDate() || new Date();
+                    user.isOnline = userData.isOnline;
 
-                    const userProfile = await userProfileService.getUserProfile(userData.userId);
-
-                    if (userProfile) {
-
-                        // Convert UserProfile to User
-                        const user = userProfileService.convertToUser(
-                            userProfile,
-                            userData.location,
-                            distance
-                        );
-                        user.joinedAt = userData.joinedAt?.toDate() || new Date();
-                        user.isOnline = userData.isOnline;
-                        users.push(user);
+                    // Categorize based on distance
+                    if (distance <= 100) {
+                        usersInRange.push(user);
                     } else {
-                        console.log('❌ No profile found for user:', userData.userId);
+                        usersOutOfRange.push(user);
                     }
                 } else {
-
+                    console.log('❌ No profile found for user:', userData.userId);
                 }
             } else {
-                console.log('❌ User not eligible:', {
-                    isOnline: userData.isOnline,
-                    outOfRange: userData.outOfRange,
-                    hasLocation: !!userData.location
-                });
+                console.log('❌ User has no location data:', userData.userId);
             }
         }
 
-        return NextResponse.json({ users });
+        return NextResponse.json({
+            usersInRange,
+            usersOutOfRange,
+            totalUsers: usersInRange.length + usersOutOfRange.length
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
         return NextResponse.json(

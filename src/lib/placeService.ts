@@ -36,6 +36,12 @@ export interface UsersResponse {
     users: User[];
 }
 
+export interface CategorizedUsersResponse {
+    usersInRange: User[];
+    usersOutOfRange: User[];
+    totalUsers: number;
+}
+
 // Create a new place
 export const createPlace = async (data: CreatePlaceRequest) => {
     const response = await fetch(`${API_BASE}/places/create`, {
@@ -126,6 +132,24 @@ export const getPlaceUsers = async (
     originLat: number,
     originLng: number
 ): Promise<UsersResponse> => {
+    const response = await fetch(
+        `${API_BASE}/places/${placeId}/users?originLat=${originLat}&originLng=${originLng}`
+    );
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch users');
+    }
+
+    return response.json();
+};
+
+// Get categorized users in a place (in range and out of range)
+export const getPlaceUsersCategorized = async (
+    placeId: string,
+    originLat: number,
+    originLng: number
+): Promise<CategorizedUsersResponse> => {
     const response = await fetch(
         `${API_BASE}/places/${placeId}/users?originLat=${originLat}&originLng=${originLng}`
     );
