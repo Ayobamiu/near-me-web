@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { UserConnection } from "@/types";
-import connectionService from "@/lib/connectionService";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ConnectionManagerProps {

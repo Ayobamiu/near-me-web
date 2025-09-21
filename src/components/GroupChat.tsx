@@ -8,7 +8,6 @@ import { db } from "@/lib/firebase";
 import {
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
   doc,

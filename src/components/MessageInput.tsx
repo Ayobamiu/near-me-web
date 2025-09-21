@@ -4,7 +4,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { SendMessageRequest } from "@/types";
 
 interface MessageInputProps {
-  onSendMessage: (message: Omit<SendMessageRequest, "receiverId">) => void;
+  onSendMessage: (
+    message: Omit<SendMessageRequest, "receiverId" | "senderId">
+  ) => void;
   disabled?: boolean;
   placeholder?: string;
 }

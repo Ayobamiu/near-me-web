@@ -1,5 +1,4 @@
-import { db, database } from './firebase';
-import { collection, doc, setDoc, onSnapshot, query, where, orderBy, serverTimestamp, getDocs } from 'firebase/firestore';
+import { database } from './firebase';
 import { ref, onValue, onDisconnect, set, get } from 'firebase/database';
 
 export interface UserPresence {
@@ -17,7 +16,7 @@ export interface UserPresence {
 }
 
 class PresenceService {
-    private userStatusDatabaseRef: any = null;
+    private userStatusDatabaseRef: ReturnType<typeof ref> | null = null;
 
     // Set user as online using Realtime Database only
     async setOnline(userId: string, userData: Partial<UserPresence>, currentPlace?: string): Promise<void> {
@@ -36,7 +35,7 @@ class PresenceService {
 
             // Filter out undefined values for Realtime Database
             const filteredUserData = Object.fromEntries(
-                Object.entries(userData).filter(([_, value]) => value !== undefined)
+                Object.entries(userData).filter(([, value]) => value !== undefined)
             );
 
             const isOnlineForDatabase = {
@@ -60,16 +59,18 @@ class PresenceService {
                 }
 
                 console.log('✅ Connected, setting up onDisconnect...');
-                onDisconnect(this.userStatusDatabaseRef).set(isOfflineForDatabase).then(() => {
-                    console.log('🟢 Setting user online in Realtime Database...');
-                    set(this.userStatusDatabaseRef, isOnlineForDatabase).then(() => {
-                        console.log('✅ Realtime Database status set successfully');
+                if (this.userStatusDatabaseRef) {
+                    onDisconnect(this.userStatusDatabaseRef).set(isOfflineForDatabase).then(() => {
+                        console.log('🟢 Setting user online in Realtime Database...');
+                        set(this.userStatusDatabaseRef!, isOnlineForDatabase).then(() => {
+                            console.log('✅ Realtime Database status set successfully');
+                        }).catch((error) => {
+                            console.error('❌ Error setting Realtime Database status:', error);
+                        });
                     }).catch((error) => {
-                        console.error('❌ Error setting Realtime Database status:', error);
+                        console.error('❌ Error setting up onDisconnect:', error);
                     });
-                }).catch((error) => {
-                    console.error('❌ Error setting up onDisconnect:', error);
-                });
+                }
             }, (error) => {
                 console.error('❌ Error in connection listener:', error);
             });

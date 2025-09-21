@@ -164,7 +164,7 @@ export default function ChatWindow({ otherUser, onClose }: ChatWindowProps) {
   };
 
   const handleSendMessage = async (
-    messageRequest: Omit<SendMessageRequest, "receiverId">
+    messageRequest: Omit<SendMessageRequest, "receiverId" | "senderId">
   ) => {
     if (!currentUser) return;
 
@@ -174,6 +174,7 @@ export default function ChatWindow({ otherUser, onClose }: ChatWindowProps) {
 
       await chatService.sendMessage({
         ...messageRequest,
+        senderId: currentUser.uid,
         receiverId: otherUser.id,
       });
 
