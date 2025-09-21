@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { User, ChatMessage, SendMessageRequest, Conversation } from "@/types";
+import { User, ChatMessage, SendMessageRequest } from "@/types";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import chatService from "@/lib/chatService";
@@ -10,43 +10,38 @@ import { db } from "@/lib/firebase";
 import {
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
   limit,
+  doc,
 } from "firebase/firestore";
 import userProfileService from "@/lib/userProfileService";
 
 interface ChatWindowProps {
   otherUser: User;
-  conversation?: Conversation | null;
   onClose: () => void;
 }
 
-export default function ChatWindow({
-  otherUser,
-  conversation,
-  onClose,
-}: ChatWindowProps) {
+export default function ChatWindow({ otherUser, onClose }: ChatWindowProps) {
   const { user: currentUser } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
-  const [currentConversation, setCurrentConversation] =
-    useState<Conversation | null>(conversation || null);
+  const [conversationId, setConversationId] = useState<string>("");
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // Load messages when component mounts or conversation changes
   useEffect(() => {
-    if (currentConversation) {
+    if (conversationId) {
       setupRealtimeListener();
-    } else if (currentUser) {
-      // Try to get existing conversation
-      getOrCreateConversation();
+    } else if (currentUser && otherUser) {
+      // Generate conversation ID
+      const id = chatService.getConversationId(currentUser.uid, otherUser.id);
+      setConversationId(id);
     }
-  }, [currentConversation, currentUser]);
+  }, [conversationId, currentUser, otherUser]);
 
   // Cleanup listener on unmount
   useEffect(() => {
@@ -57,29 +52,8 @@ export default function ChatWindow({
     };
   }, []);
 
-  const getOrCreateConversation = async () => {
-    if (!currentUser) return;
-
-    try {
-      const existingConversation = await chatService.getConversation(
-        currentUser.uid,
-        otherUser.id
-      );
-
-      if (existingConversation) {
-        setCurrentConversation(existingConversation);
-      } else {
-        // Create a new conversation by sending the first message
-        // This will be handled when user sends their first message
-      }
-    } catch (error) {
-      console.error("Error getting conversation:", error);
-      setError("Failed to load conversation");
-    }
-  };
-
   const setupRealtimeListener = () => {
-    if (!currentConversation || !currentUser) return;
+    if (!conversationId || !currentUser) return;
 
     // Clean up existing listener
     if (unsubscribeRef.current) {
@@ -90,11 +64,11 @@ export default function ChatWindow({
     setError("");
 
     try {
-      // Create Firestore query for messages
-      const messagesRef = collection(db, "messages");
+      // Create Firestore query for messages using subcollection
+      const conversationRef = doc(db, "messages", conversationId);
+      const messagesRef = collection(conversationRef, "messages");
       const messagesQuery = query(
         messagesRef,
-        where("conversationId", "==", currentConversation.id),
         orderBy("createdAt", "asc"), // Get messages in chronological order
         limit(50) // Limit to last 50 messages
       );
@@ -192,38 +166,15 @@ export default function ChatWindow({
       setIsSending(true);
       setError("");
 
-      // If no conversation exists, create one by sending the first message
-      if (!currentConversation) {
-        await chatService.sendMessage(
-          {
-            ...messageRequest,
-            receiverId: otherUser.id,
-          },
-          currentUser?.uid
-        );
+      await chatService.sendMessage({
+        ...messageRequest,
+        receiverId: otherUser.id,
+      });
 
-        // The conversation will be created on the server side
-        // We'll need to reload to get the conversation
-        await getOrCreateConversation();
+      if (conversationId) {
+        await chatService.markMessagesAsRead(conversationId, currentUser.uid);
+      } else {
         return;
-      }
-
-      // Send message to existing conversation
-      await chatService.sendMessage(
-        {
-          ...messageRequest,
-          receiverId: otherUser.id,
-        },
-        currentUser?.uid
-      );
-
-      // The real-time listener will automatically update the messages
-      // Mark messages as read
-      if (currentConversation) {
-        await chatService.markMessagesAsRead(
-          currentConversation.id,
-          currentUser.uid
-        );
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -240,12 +191,9 @@ export default function ChatWindow({
   };
 
   const handleMarkAsRead = async () => {
-    if (currentConversation && currentUser) {
+    if (conversationId && currentUser) {
       try {
-        await chatService.markMessagesAsRead(
-          currentConversation.id,
-          currentUser.uid
-        );
+        await chatService.markMessagesAsRead(conversationId, currentUser.uid);
       } catch (error) {
         console.error("Error marking messages as read:", error);
       }
@@ -260,7 +208,7 @@ export default function ChatWindow({
 
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [currentConversation, currentUser]);
+  }, [conversationId, currentUser]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

@@ -110,6 +110,7 @@ export interface ChatMessage {
 }
 
 export interface SendMessageRequest {
+    senderId: string;
     receiverId: string;
     content: string;
     messageType?: 'text' | 'emoji' | 'image' | 'file';

@@ -8,14 +8,12 @@ import {
   getDoc,
   collection,
   query,
-  where,
   orderBy,
   onSnapshot,
-  addDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Message, User } from "@/types";
+import chatService from "@/lib/chatService";
 
 export default function ChatConversationPage() {
   const router = useRouter();
@@ -56,12 +54,10 @@ export default function ChatConversationPage() {
     if (!user || !otherUserId || loading) return;
 
     const conversationId = [user.uid, otherUserId].sort().join("_");
-    const messagesRef = collection(db, "messages");
-    const messagesQuery = query(
-      messagesRef,
-      where("conversationId", "==", conversationId),
-      orderBy("createdAt", "asc")
-    );
+    // Use subcollection: messages/{conversationId}/messages
+    const conversationRef = doc(db, "messages", conversationId);
+    const messagesRef = collection(conversationRef, "messages");
+    const messagesQuery = query(messagesRef, orderBy("createdAt", "asc"));
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const messagesData = snapshot.docs.map((doc) => ({
@@ -83,21 +79,16 @@ export default function ChatConversationPage() {
 
     setIsSending(true);
     try {
-      const conversationId = [user.uid, otherUserId].sort().join("_");
+      console.log(`🔍 Sending message via chatService`);
 
-      const messageData = {
-        conversationId,
+      const result = await chatService.sendMessage({
         senderId: user.uid,
         receiverId: otherUserId,
         content: newMessage.trim(),
         messageType: "text",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        readAt: null,
-        isEdited: false,
-      };
+      });
 
-      await addDoc(collection(db, "messages"), messageData);
+      console.log(`✅ Message sent successfully with ID: ${result.messageId}`);
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);

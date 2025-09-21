@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { collection, query, limit, getDocs, doc } from 'firebase/firestore';
 import { ChatMessage, Message, User } from '@/types';
 import userProfileService from '@/lib/userProfileService';
 
@@ -39,12 +39,10 @@ export async function GET(
             );
         }
 
-        // Build query for messages - simplified to avoid index requirements
-        const messagesRef = collection(db, 'messages');
-        let messagesQuery = query(
-            messagesRef,
-            where('conversationId', '==', conversationId)
-        );
+        // Build query for messages using subcollection
+        const conversationRef = doc(db, 'messages', conversationId);
+        const messagesRef = collection(conversationRef, 'messages');
+        let messagesQuery = query(messagesRef);
 
         // Apply pagination
         const messageLimit = limitParam ? parseInt(limitParam) : 50;

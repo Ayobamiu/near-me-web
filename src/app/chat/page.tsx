@@ -12,13 +12,12 @@ import {
   orderBy,
   onSnapshot,
   getDocs,
-  addDoc,
-  serverTimestamp,
   limit,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Message, User, UserConnection } from "@/types";
 import connectionService from "@/lib/connectionService";
+import chatService from "@/lib/chatService";
 import moment from "moment";
 
 interface ChatConversation {
@@ -105,28 +104,51 @@ function ChatListPageContent() {
 
           const userProfile = userProfileSnapshot.data();
 
-          // Get the last message from the conversation
-          const messagesRef = collection(db, "messages");
+          // Get the last message from the conversation using subcollection
+          const conversationId = [user.uid, otherUserId].sort().join("_");
+          console.log(
+            `🔍 Getting last message for conversation: ${conversationId}`
+          );
+
+          const conversationRef = doc(db, "messages", conversationId);
+          const messagesRef = collection(conversationRef, "messages");
           const lastMessageQuery = query(
             messagesRef,
-            where("conversationId", "==", `${user.uid}_${otherUserId}`),
             orderBy("createdAt", "desc"),
             limit(1)
           );
-          const lastMessageSnapshot = await getDocs(lastMessageQuery);
 
           let lastMessage = "";
           let lastMessageTime = new Date();
           let unreadCount = 0;
 
-          if (!lastMessageSnapshot.empty) {
-            const lastMsg = lastMessageSnapshot.docs[0].data();
-            lastMessage = lastMsg.content || "";
-            lastMessageTime = lastMsg.createdAt?.toDate() || new Date();
+          try {
+            const lastMessageSnapshot = await getDocs(lastMessageQuery);
+            console.log(
+              `📨 Last message query result: ${lastMessageSnapshot.docs.length} messages found`
+            );
 
-            // Count unread messages (messages after user's last read time)
-            // For now, we'll set this to 0 - you can implement proper unread tracking later
-            unreadCount = 0;
+            if (!lastMessageSnapshot.empty) {
+              const lastMsg = lastMessageSnapshot.docs[0].data();
+              lastMessage = lastMsg.content || "";
+              lastMessageTime = lastMsg.createdAt?.toDate() || new Date();
+              console.log(
+                `📝 Last message: "${lastMessage}" at ${lastMessageTime} | id: ${lastMessageSnapshot.docs[0].id}`
+              );
+
+              // Count unread messages (messages after user's last read time)
+              // For now, we'll set this to 0 - you can implement proper unread tracking later
+              unreadCount = 0;
+            } else {
+              console.log(
+                `📭 No messages found for conversation ${conversationId}`
+              );
+            }
+          } catch (error) {
+            console.error(
+              `❌ Error fetching last message for ${conversationId}:`,
+              error
+            );
           }
 
           return {
@@ -216,12 +238,10 @@ function ChatListPageContent() {
     if (!user || !selectedUserId || loading) return;
 
     const conversationId = [user.uid, selectedUserId].sort().join("_");
-    const messagesRef = collection(db, "messages");
-    const messagesQuery = query(
-      messagesRef,
-      where("conversationId", "==", conversationId),
-      orderBy("createdAt", "asc")
-    );
+    // Use subcollection: messages/{conversationId}/messages
+    const conversationRef = doc(db, "messages", conversationId);
+    const messagesRef = collection(conversationRef, "messages");
+    const messagesQuery = query(messagesRef, orderBy("createdAt", "asc"));
 
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const messagesData = snapshot.docs.map((doc) => ({
@@ -261,21 +281,16 @@ function ChatListPageContent() {
 
     setIsSending(true);
     try {
-      const conversationId = [user.uid, selectedUserId].sort().join("_");
+      console.log(`🔍 Sending message via chatService`);
 
-      const messageData = {
-        conversationId,
+      const result = await chatService.sendMessage({
         senderId: user.uid,
         receiverId: selectedUserId,
         content: newMessage.trim(),
         messageType: "text",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        readAt: null,
-        isEdited: false,
-      };
+      });
 
-      await addDoc(collection(db, "messages"), messageData);
+      console.log(`✅ Message sent successfully with ID: ${result.messageId}`);
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);

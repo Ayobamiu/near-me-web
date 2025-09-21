@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, query, orderBy, limit, getDocs, where } from "firebase/firestore";
+import { collection, setDoc, query, orderBy, limit, getDocs, doc } from "firebase/firestore";
 import { GroupMessage } from "@/types";
 
 export async function POST(
@@ -18,7 +18,11 @@ export async function POST(
             );
         }
 
-        // Create message
+        // Create message in subcollection: /groups/{groupId}/messages/{messageId}
+        const groupRef = doc(db, "groups", groupId);
+        const messagesRef = collection(groupRef, "messages");
+        const messageRef = doc(messagesRef); // Generate a new document ID
+
         const messageData: Omit<GroupMessage, "id"> = {
             groupId,
             senderId,
@@ -28,7 +32,7 @@ export async function POST(
             readBy: [senderId], // Sender has read their own message
         };
 
-        const messageRef = await addDoc(collection(db, "groupMessages"), messageData);
+        await setDoc(messageRef, messageData);
 
         return NextResponse.json({
             success: true,
@@ -53,11 +57,11 @@ export async function GET(
         const { searchParams } = new URL(request.url);
         const limitCount = parseInt(searchParams.get("limit") || "50");
 
-        // Get messages
-        const messagesRef = collection(db, "groupMessages");
+        // Get messages from subcollection
+        const groupRef = doc(db, "groups", groupId);
+        const messagesRef = collection(groupRef, "messages");
         const messagesQuery = query(
             messagesRef,
-            where("groupId", "==", groupId),
             orderBy("createdAt", "desc"),
             limit(limitCount)
         );

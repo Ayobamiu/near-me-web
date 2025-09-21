@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, setDoc, query, where, getDocs, serverTimestamp, doc } from 'firebase/firestore';
 import { SendMessageRequest, Message } from '@/types';
 
 export async function POST(request: NextRequest) {
     try {
         const body: SendMessageRequest = await request.json();
-        const { receiverId, content, messageType = 'text', replyToMessageId } = body;
+        const { receiverId, content, messageType = 'text', replyToMessageId, senderId } = body;
 
         if (!receiverId || !content) {
             return NextResponse.json(
@@ -15,12 +15,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Get sender ID from request headers (you might want to add auth middleware)
-        const senderId = request.headers.get('x-user-id');
         if (!senderId) {
             return NextResponse.json(
-                { error: 'User authentication required' },
-                { status: 401 }
+                { error: 'Sender ID is required' },
+                { status: 400 }
             );
         }
 
@@ -48,10 +46,15 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // For now, create a simple conversation ID based on user IDs
+        // Create conversation ID based on user IDs (sorted for consistency)
         const conversationId = [senderId, receiverId].sort().join('_');
 
-        // Create message
+        // Create message in subcollection: /messages/{conversationId}/messages/{messageId}
+        const conversationRef = doc(db, 'messages', conversationId);
+        const messagesRef = collection(conversationRef, 'messages');
+
+        console.log(`🔍 Creating message in subcollection: messages/${conversationId}/messages/`);
+
         const messageData = {
             conversationId,
             senderId,
@@ -65,8 +68,17 @@ export async function POST(request: NextRequest) {
             isEdited: false,
         };
 
-        const messageRef = await addDoc(collection(db, 'messages'), messageData);
-        const messageId = messageRef.id;
+        console.log(`📝 Message data:`, messageData);
+
+        let messageId: string;
+        try {
+            const messageRef = await addDoc(messagesRef, messageData);
+            messageId = messageRef.id;
+            console.log(`✅ Message saved successfully with ID: ${messageId}`);
+        } catch (error) {
+            console.error(`❌ Error saving message:`, error);
+            throw error;
+        }
 
         const createdMessage: Message = {
             id: messageId,

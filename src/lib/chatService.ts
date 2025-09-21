@@ -1,44 +1,33 @@
 import {
     Message,
-    Conversation,
     ChatMessage,
-    SendMessageRequest,
-    ConversationSummary
+    SendMessageRequest
 } from '@/types';
 
 const API_BASE = '/api';
 
 const chatService = {
     // Send a message to a user
-    sendMessage: async (request: SendMessageRequest, userId?: string): Promise<Message> => {
-        const headers: HeadersInit = {
-            'Content-Type': 'application/json',
-        };
-        if (userId) {
-            headers['x-user-id'] = userId;
-        }
-
+    sendMessage: async (request: SendMessageRequest): Promise<{ success: boolean; messageId: string }> => {
         const response = await fetch(`${API_BASE}/chat/send`, {
             method: 'POST',
-            headers,
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(request),
         });
+
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.error || 'Failed to send message');
         }
+
         return response.json();
     },
 
-    // Get conversation between two users
-    getConversation: async (userId1: string, userId2: string): Promise<Conversation | null> => {
-        const response = await fetch(`${API_BASE}/chat/users/${userId1}/${userId2}`);
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to get conversation');
-        }
-        const data = await response.json();
-        return data.conversation;
+    // Generate conversation ID between two users
+    getConversationId: (userId1: string, userId2: string): string => {
+        return [userId1, userId2].sort().join('_');
     },
 
     // Get messages for a conversation
@@ -63,15 +52,7 @@ const chatService = {
         return response.json();
     },
 
-    // Get all conversations for a user
-    getConversations: async (userId: string): Promise<ConversationSummary[]> => {
-        const response = await fetch(`${API_BASE}/chat/user/${userId}/conversations`);
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to get conversations');
-        }
-        return response.json();
-    },
+    // Note: getConversations method removed - use connections + messages directly
 
     // Mark messages as read
     markMessagesAsRead: async (conversationId: string, userId: string): Promise<{ success: boolean }> => {

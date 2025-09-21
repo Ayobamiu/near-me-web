@@ -46,5 +46,20 @@ service cloud.firestore {
     match /groupMessages/{messageId} {
       allow read, write: if true;
     }
+    
+     // Allow public access to conversation messages subcollections for MVP
+    match /messages/{conversationId}/messages/{messageId} {
+      allow read, write: if true;
+    }
+    
+// Allow public access to group messages subcollections for MVP
+match /groups/{groupId}/messages/{messageId} {
+  allow read, write: if true;
+}
+
+// Temporary: Allow access to old groupMessages structure for migration
+match /groupMessages/{groupId}/messages/{messageId} {
+  allow read, write: if true;
+}
   }
 }

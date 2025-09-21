@@ -11,6 +11,7 @@ import {
   where,
   orderBy,
   onSnapshot,
+  doc,
 } from "firebase/firestore";
 import moment from "moment";
 
@@ -55,12 +56,10 @@ export default function GroupChat({ group, onClose }: GroupChatProps) {
 
     setIsLoadingMessages(true);
 
-    const messagesRef = collection(db, "groupMessages");
-    const messagesQuery = query(
-      messagesRef,
-      where("groupId", "==", group.id),
-      orderBy("createdAt", "asc")
-    );
+    // Use subcollection: groups/{groupId}/messages
+    const groupRef = doc(db, "groups", group.id);
+    const messagesRef = collection(groupRef, "messages");
+    const messagesQuery = query(messagesRef, orderBy("createdAt", "asc"));
 
     const unsubscribe = onSnapshot(
       messagesQuery,

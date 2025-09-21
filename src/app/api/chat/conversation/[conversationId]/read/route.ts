@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, serverTimestamp, doc } from 'firebase/firestore';
 
 export async function POST(
     request: NextRequest,
@@ -28,11 +28,11 @@ export async function POST(
             );
         }
 
-        // Find all unread messages for this user in this conversation
-        const messagesRef = collection(db, 'messages');
+        // Find all unread messages for this user in this conversation using subcollection
+        const conversationRef = doc(db, 'messages', conversationId);
+        const messagesRef = collection(conversationRef, 'messages');
         const unreadQuery = query(
             messagesRef,
-            where('conversationId', '==', conversationId),
             where('receiverId', '==', userId),
             where('readAt', '==', null)
         );
