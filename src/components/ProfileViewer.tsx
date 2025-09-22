@@ -23,7 +23,12 @@ export default function ProfileViewer({ user, onClose }: ProfileViewerProps) {
   const [showConnectionModal, setShowConnectionModal] = useState(false);
 
   useEffect(() => {
-    loadProfile();
+    if (user.id) {
+      loadProfile();
+    } else {
+      setError("Invalid user data");
+      setLoading(false);
+    }
   }, [user.id]);
 
   useEffect(() => {
@@ -36,6 +41,11 @@ export default function ProfileViewer({ user, onClose }: ProfileViewerProps) {
     try {
       setLoading(true);
       setError("");
+
+      // Check if user.id exists
+      if (!user.id) {
+        throw new Error("User ID is required");
+      }
 
       const userProfile = await userProfileService.getUserProfile(user.id);
       if (userProfile) {

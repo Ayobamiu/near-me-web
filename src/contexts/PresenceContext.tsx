@@ -6,6 +6,7 @@ import {
   default as presenceService,
   UserPresence,
 } from "@/lib/presenceService";
+import useUserProfile from "@/hooks/useUserProfile";
 
 interface PresenceContextType {
   onlineUsers: UserPresence[];
@@ -35,6 +36,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const { user } = useAuth();
+  const { profile } = useUserProfile();
   const [onlineUsers, setOnlineUsers] = useState<UserPresence[]>([]);
   const [placeUsers, setPlaceUsers] = useState<UserPresence[]>([]);
   const [isOnline, setIsOnline] = useState(false);
@@ -66,7 +68,9 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({
           id: user.uid,
           displayName: user.displayName || "User",
           email: user.email || "",
-          profilePictureUrl: user.photoURL || undefined,
+          profilePictureUrl:
+            profile?.profilePictureUrl || user.photoURL || undefined,
+          headline: profile?.headline || undefined,
         });
         setIsOnline(true);
         console.log(`✅ User ${user.uid} is now online`);
@@ -101,7 +105,7 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       unsubscribeOnline();
     };
-  }, [user]);
+  }, [user, profile]);
 
   // Subscribe to place users when currentPlace changes
   useEffect(() => {
@@ -143,7 +147,9 @@ export const PresenceProvider: React.FC<{ children: React.ReactNode }> = ({
           id: user.uid,
           displayName: user.displayName || "User",
           email: user.email || "",
-          profilePictureUrl: user.photoURL || undefined,
+          profilePictureUrl:
+            profile?.profilePictureUrl || user.photoURL || undefined,
+          headline: profile?.headline || undefined,
         },
         placeId
       );

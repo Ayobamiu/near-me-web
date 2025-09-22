@@ -13,6 +13,7 @@ export interface UserPresence {
         lng: number;
     };
     profilePictureUrl?: string;
+    headline?: string;
 }
 
 class PresenceService {
@@ -175,6 +176,7 @@ class PresenceService {
                             currentPlace: userData.currentPlace || null,
                             location: userData.location || null,
                             profilePictureUrl: userData.profilePictureUrl || null,
+                            headline: userData.headline || null,
                         });
                     }
                 });
@@ -216,6 +218,7 @@ class PresenceService {
                             currentPlace: userData.currentPlace || null,
                             location: userData.location || null,
                             profilePictureUrl: userData.profilePictureUrl || null,
+                            headline: userData.headline || null,
                         });
                     }
                 });

@@ -148,3 +148,37 @@ export interface GroupMessage {
     readBy: string[]; // Array of user IDs who have read this message
     replyToMessageId?: string;
 }
+
+export interface FeedPost {
+    id: string;
+    placeId: string;
+    authorId: string;
+    content: string;
+    postType: 'text' | 'image' | 'recommendation' | 'question' | 'checkin' | 'announcement';
+    mediaUrls?: string[];
+    tags?: string[];
+    createdAt: Date;
+    updatedAt?: Date;
+    likes: string[]; // Array of user IDs who liked
+    comments: FeedComment[];
+    shares: number;
+    isPinned?: boolean;
+    isAnnouncement?: boolean; // For venue announcements
+}
+
+export interface FeedComment {
+    id: string;
+    postId: string;
+    authorId: string;
+    content: string;
+    createdAt: Date;
+    likes: string[];
+    replyToCommentId?: string;
+}
+
+export interface PostEngagement {
+    postId: string;
+    userId: string;
+    action: 'like' | 'comment' | 'share' | 'save';
+    createdAt: Date;
+}

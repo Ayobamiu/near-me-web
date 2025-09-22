@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { User, Place, Group, UserConnection } from "@/types";
+import { User, Place, UserConnection } from "@/types";
 import { getCurrentPosition } from "@/lib/geolocation";
 import {
   calculateDistance,
@@ -17,12 +17,14 @@ import {
 } from "@/lib/placeService";
 import connectionService from "@/lib/connectionService";
 // import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
-import UserCard from "@/components/UserCard";
 import ProfileManager from "@/components/ProfileManager";
 import ProfileViewer from "@/components/ProfileViewer";
 import ConnectionManager from "@/components/ConnectionManager";
 import PlaceShareModal from "@/components/PlaceShareModal";
-import GroupChat from "@/components/GroupChat";
+import PlaceFeed from "@/components/PlaceFeed";
+import PeopleGrid from "@/components/PeopleGrid";
+import ProfileSidebar from "@/components/ProfileSidebar";
+import ActivitySidebar from "@/components/ActivitySidebar";
 import {
   doc,
   getDoc,
@@ -30,9 +32,6 @@ import {
   collection,
   updateDoc,
   serverTimestamp,
-  query,
-  where,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,11 +65,7 @@ export default function PlacePage() {
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const [activeConnectionsCount, setActiveConnectionsCount] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"discussions" | "people">(
-    "discussions"
-  );
-  const [group, setGroup] = useState<Group | null>(null);
-  const [isLoadingGroup, setIsLoadingGroup] = useState(false);
+  const [activeTab, setActiveTab] = useState<"feed" | "people">("feed");
 
   const [connections, setConnections] = useState<UserConnection[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
@@ -158,70 +153,6 @@ export default function PlacePage() {
 
     setProximityCheckInterval(interval);
   }, [user, place, proximityCheckInterval, placeId]);
-
-  const loadGroup = useCallback(async () => {
-    if (!place || !user) {
-      return;
-    }
-
-    try {
-      setIsLoadingGroup(true);
-
-      // Check if group exists for this place
-      const groupsRef = collection(db, "groups");
-      const groupQuery = query(
-        groupsRef,
-        where("placeId", "==", placeId),
-        where("isActive", "==", true)
-      );
-
-      const groupSnapshot = await getDocs(groupQuery);
-
-      if (!groupSnapshot.empty) {
-        // Group exists, get it
-        const groupDoc = groupSnapshot.docs[0];
-        const groupData = {
-          id: groupDoc.id,
-          ...groupDoc.data(),
-          createdAt: groupDoc.data().createdAt.toDate(),
-          updatedAt: groupDoc.data().updatedAt.toDate(),
-          lastMessageAt: groupDoc.data().lastMessageAt?.toDate(),
-        } as Group;
-
-        setGroup(groupData);
-
-        // Join the group if user is not already a member
-        if (!groupData.memberIds.includes(user.uid)) {
-          await fetch(`/api/groups/${groupData.id}/join`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: user.uid }),
-          });
-        }
-      } else {
-        // No group exists, create one
-        const response = await fetch("/api/groups/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            placeId: placeId,
-            name: place.name,
-            createdBy: user.uid,
-          }),
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          // Reload the group
-          loadGroup();
-        }
-      }
-    } catch (error) {
-      console.error("Error loading group:", error);
-    } finally {
-      setIsLoadingGroup(false);
-    }
-  }, [place, user, placeId]);
 
   const loadPlaceData = useCallback(async () => {
     try {
@@ -378,9 +309,6 @@ export default function PlacePage() {
                 // Set as already joined
                 setIsAlreadyJoined(true);
                 setCanJoin(true);
-
-                // Load group after joining
-                loadGroup();
 
                 // Set up real-time listener for the place
                 onSnapshot(
@@ -543,13 +471,6 @@ export default function PlacePage() {
     };
   }, [user, placeId, stopProximityMonitoring]);
 
-  // Load group when place is loaded and user is in the place
-  useEffect(() => {
-    if (place && user) {
-      loadGroup();
-    }
-  }, [place, user, loadGroup]);
-
   const retryGeolocation = () => {
     setGeolocationError(null);
     loadPlaceData();
@@ -559,6 +480,25 @@ export default function PlacePage() {
 
   const handleViewProfile = (user: User) => {
     setSelectedUser(user);
+  };
+
+  const handleConnect = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      await connectionService.sendConnectionRequest({
+        fromUserId: user.uid,
+        toUserId: userId,
+        message: `Hi! I saw you're also at ${
+          place?.name || "this place"
+        }. Would love to connect!`,
+      });
+
+      // Reload connection counts
+      loadConnectionCounts();
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+    }
   };
 
   const handleEditProfile = () => {
@@ -954,462 +894,167 @@ export default function PlacePage() {
         )}
       </div>
 
-      {/* WhatsApp-style Main Content */}
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* Discord-style Sidebar - Hidden on mobile */}
-        <div className="hidden lg:flex lg:w-80 bg-white border-r border-gray-200 flex-col">
-          {/* User Status Section */}
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-                {user?.photoURL ? (
-                  <img
-                    src={user.photoURL}
-                    alt={user.displayName || "User"}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-blue-600 font-semibold text-sm">
-                    {user?.displayName?.charAt(0) ||
-                      user?.email?.charAt(0) ||
-                      "A"}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.displayName || "Anonymous User"}
-                </p>
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-xs text-gray-500">Online</span>
-                </div>
-              </div>
+      {/* Mobile Status Section - Only visible on mobile */}
+      <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+              {profile?.profilePictureUrl ? (
+                <img
+                  src={profile.profilePictureUrl}
+                  alt={profile.displayName || "User"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-blue-600 font-semibold text-sm">
+                  {profile?.displayName?.charAt(0) ||
+                    user?.displayName?.charAt(0) ||
+                    user?.email?.charAt(0) ||
+                    "A"}
+                </span>
+              )}
             </div>
-
-            {/* Status Messages */}
-            {!canJoin ? (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-red-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                  <p className="text-sm text-red-700">
-                    Not within 100m of this place
-                  </p>
-                </div>
-              </div>
-            ) : isAlreadyJoined ? (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-green-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <p className="text-sm text-green-700">Joined this place</p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <p className="text-sm text-blue-700">
-                    {isFirstUser
-                      ? "Ready to create place!"
-                      : "Within range - auto-joined!"}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Stats Section */}
-          <div className="p-4 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">
-              Activity
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">People Nearby</span>
-                <span className="text-sm font-semibold text-blue-600">
-                  {usersInRange.length + usersOutOfRange.length}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Pending Requests</span>
-                <span className="text-sm font-semibold text-orange-600">
-                  {pendingConnectionsCount}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">
-                  Active Connections
-                </span>
-                <span className="text-sm font-semibold text-green-600">
-                  {activeConnectionsCount}
-                </span>
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {user?.displayName || "Anonymous User"}
+              </p>
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs text-gray-500">Online</span>
               </div>
             </div>
           </div>
-
-          {/* Actions */}
-          <div className="p-4 space-y-2">
+          <div className="flex items-center space-x-2">
             <button
-              onClick={() => router.push("/chat")}
-              className="w-full px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              onClick={() =>
+                router.push(`/chat?returnTo=place&placeId=${placeId}`)
+              }
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Messages"
             >
-              Messages
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
             </button>
             <button
               onClick={() => setShowConnectionManager(true)}
-              className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative"
+              title="Connections"
             >
-              Manage Connections
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+              {pendingConnectionsCount > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-500 text-white animate-pulse min-w-[18px] h-[18px]">
+                  {pendingConnectionsCount}
+                </span>
+              )}
             </button>
-            <button
-              onClick={handleEditProfile}
-              className="w-full px-3 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-            >
-              Edit Profile
-            </button>
-            <button
-              onClick={signOut}
-              className="w-full px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-
-        {/* WhatsApp-style Main Area */}
-        <div className="flex-1 flex flex-col w-full lg:w-auto">
-          {/* Mobile Status Section - Only visible on mobile */}
-          <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-                  {profile?.profilePictureUrl ? (
-                    <img
-                      src={profile.profilePictureUrl}
-                      alt={profile.displayName || "User"}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-blue-600 font-semibold text-sm">
-                      {profile?.displayName?.charAt(0) ||
-                        user?.displayName?.charAt(0) ||
-                        user?.email?.charAt(0) ||
-                        "A"}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {user?.displayName || "Anonymous User"}
-                  </p>
-                  <div className="flex items-center space-x-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-xs text-gray-500">Online</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => router.push("/chat")}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Messages"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setShowConnectionManager(true)}
-                  className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Connections"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Mobile Status Messages */}
-            {!canJoin ? (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-red-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                  <p className="text-sm text-red-700">
-                    Not within 100m of this place
-                  </p>
-                </div>
-              </div>
-            ) : isAlreadyJoined ? (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-green-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  <p className="text-sm text-green-700">Joined this place</p>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <svg
-                    className="w-4 h-4 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <p className="text-sm text-blue-700">
-                    {isFirstUser
-                      ? "Ready to create place!"
-                      : "Within range - auto-joined!"}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Header with Tabs */}
-          <div className="bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between px-4 py-3">
-              <div className="flex space-x-6">
-                <button
-                  onClick={() => setActiveTab("discussions")}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === "discussions"
-                      ? "text-blue-600 border-blue-600"
-                      : "text-gray-500 border-transparent hover:text-gray-700"
-                  }`}
-                >
-                  Discussions
-                </button>
-                <button
-                  onClick={() => setActiveTab("people")}
-                  className={`text-sm font-medium pb-2 border-b-2 transition-colors ${
-                    activeTab === "people"
-                      ? "text-blue-600 border-blue-600"
-                      : "text-gray-500 border-transparent hover:text-gray-700"
-                  }`}
-                >
-                  People ({usersInRange.length + usersOutOfRange.length})
-                </button>
-              </div>
-              <span className="text-sm text-gray-500">
-                {activeTab === "discussions"
-                  ? group
-                    ? `${group.memberIds.length} members`
-                    : "Loading..."
-                  : `${usersInRange.length} currently here, ${usersOutOfRange.length} were here`}
-              </span>
-            </div>
-          </div>
-
-          {/* Content Area */}
-          <div className="flex-1 overflow-y-auto bg-gray-50">
-            {activeTab === "discussions" ? (
-              // Group Chat Tab
-              group ? (
-                <GroupChat group={group} />
-              ) : isLoadingGroup ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading group chat...</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                  <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg
-                      className="w-10 h-10 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                      />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    No group chat available
-                  </h3>
-                  <p className="text-gray-500 max-w-sm">
-                    Group chat will be created when you join this place.
-                  </p>
-                </div>
-              )
-            ) : // People Tab
-            usersInRange.length === 0 && usersOutOfRange.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <svg
-                    className="w-10 h-10 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {isFirstUser
-                    ? "Be the first to create this place!"
-                    : "No one else is here yet"}
-                </h3>
-                <p className="text-gray-500 max-w-sm">
-                  {isFirstUser
-                    ? "Your location will become the meeting point for others to join"
-                    : "Be the first to join this place and start connecting with people nearby!"}
-                </p>
-              </div>
-            ) : (
-              <div className="p-2 lg:p-4 space-y-4">
-                {/* Users Currently Here */}
-                {usersInRange.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                      <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                      Currently Here ({usersInRange.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {usersInRange.map((userItem) => (
-                        <UserCard
-                          key={userItem.id}
-                          user={userItem}
-                          showConnectionButton={userItem.id !== user?.uid}
-                          onViewProfile={handleViewProfile}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Users Who Were Here */}
-                {usersOutOfRange.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-600 mb-3 flex items-center">
-                      <span className="w-3 h-3 bg-gray-400 rounded-full mr-2"></span>
-                      Were Here ({usersOutOfRange.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {usersOutOfRange.map((userItem) => (
-                        <UserCard
-                          key={userItem.id}
-                          user={userItem}
-                          showConnectionButton={userItem.id !== user?.uid}
-                          onViewProfile={handleViewProfile}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* No users message */}
-                {usersInRange.length === 0 && usersOutOfRange.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No users have visited this place yet.</p>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Profile Manager Modal */}
+      {/* Main Content - LinkedIn Style Layout */}
+      <div className="flex h-[calc(100vh-73px)]">
+        {/* Content Area - LinkedIn Style Layout */}
+        <div className="flex-1 overflow-y-auto bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 py-6">
+            <div className="flex gap-6">
+              {/* Left Sidebar - Profile */}
+              <div className="hidden lg:block">
+                <ProfileSidebar
+                  onViewProfile={handleViewProfile}
+                  pendingConnectionsCount={pendingConnectionsCount}
+                  activeConnectionsCount={activeConnectionsCount}
+                  onEditProfile={handleEditProfile}
+                  onManageConnections={() => setShowConnectionManager(true)}
+                  onMessages={() =>
+                    router.push(`/chat?returnTo=place&placeId=${placeId}`)
+                  }
+                  onSignOut={signOut}
+                />
+              </div>
+
+              {/* Main Content */}
+              <div className="flex-1 min-w-0">
+                {/* Tab Navigation */}
+                <div className="mb-6">
+                  <div className="border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8">
+                      {[
+                        { id: "feed", label: "Feed", icon: "📝" },
+                        { id: "people", label: "People", icon: "👥" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() =>
+                            setActiveTab(tab.id as "feed" | "people")
+                          }
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === tab.id
+                              ? "border-blue-500 text-blue-600"
+                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                          }`}
+                        >
+                          <span className="mr-2">{tab.icon}</span>
+                          {tab.label}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                </div>
+
+                {/* Tab Content */}
+                {activeTab === "feed" && (
+                  <PlaceFeed
+                    placeId={placeId}
+                    onViewProfile={handleViewProfile}
+                  />
+                )}
+
+                {activeTab === "people" && (
+                  <PeopleGrid
+                    usersInRange={usersInRange}
+                    usersOutOfRange={usersOutOfRange}
+                    onViewProfile={handleViewProfile}
+                    onConnect={handleConnect}
+                  />
+                )}
+              </div>
+
+              {/* Right Sidebar - Activity */}
+              <div className="hidden xl:block">
+                <ActivitySidebar
+                  usersInRange={usersInRange}
+                  usersOutOfRange={usersOutOfRange}
+                  onViewProfile={handleViewProfile}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {showProfileManager && (
         <ProfileManager
           onClose={() => setShowProfileManager(false)}
