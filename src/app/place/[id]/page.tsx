@@ -23,6 +23,7 @@ import ProfileViewer from "@/components/ProfileViewer";
 import ConnectionManager from "@/components/ConnectionManager";
 import PlaceShareModal from "@/components/PlaceShareModal";
 import PlaceFeed from "@/components/PlaceFeed";
+import PeopleGrid from "@/components/PeopleGrid";
 import ProfileSidebar from "@/components/ProfileSidebar";
 import ActivitySidebar from "@/components/ActivitySidebar";
 import {
@@ -65,6 +66,7 @@ export default function PlacePage() {
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const [activeConnectionsCount, setActiveConnectionsCount] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"feed" | "people">("feed");
 
   const [connections, setConnections] = useState<UserConnection[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
@@ -479,6 +481,25 @@ export default function PlacePage() {
 
   const handleViewProfile = (user: User) => {
     setSelectedUser(user);
+  };
+
+  const handleConnect = async (userId: string) => {
+    if (!user) return;
+
+    try {
+      await connectionService.sendConnectionRequest({
+        fromUserId: user.uid,
+        toUserId: userId,
+        message: `Hi! I saw you're also at ${
+          place?.name || "this place"
+        }. Would love to connect!`,
+      });
+
+      // Reload connection counts
+      loadConnectionCounts();
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+    }
   };
 
   const handleEditProfile = () => {
@@ -968,10 +989,49 @@ export default function PlacePage() {
 
               {/* Main Content */}
               <div className="flex-1 min-w-0">
-                <PlaceFeed
-                  placeId={placeId}
-                  onViewProfile={handleViewProfile}
-                />
+                {/* Tab Navigation */}
+                <div className="mb-6">
+                  <div className="border-b border-gray-200">
+                    <nav className="-mb-px flex space-x-8">
+                      {[
+                        { id: "feed", label: "Feed", icon: "📝" },
+                        { id: "people", label: "People", icon: "👥" },
+                      ].map((tab) => (
+                        <button
+                          key={tab.id}
+                          onClick={() =>
+                            setActiveTab(tab.id as "feed" | "people")
+                          }
+                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                            activeTab === tab.id
+                              ? "border-blue-500 text-blue-600"
+                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                          }`}
+                        >
+                          <span className="mr-2">{tab.icon}</span>
+                          {tab.label}
+                        </button>
+                      ))}
+                    </nav>
+                  </div>
+                </div>
+
+                {/* Tab Content */}
+                {activeTab === "feed" && (
+                  <PlaceFeed
+                    placeId={placeId}
+                    onViewProfile={handleViewProfile}
+                  />
+                )}
+
+                {activeTab === "people" && (
+                  <PeopleGrid
+                    usersInRange={usersInRange}
+                    usersOutOfRange={usersOutOfRange}
+                    onViewProfile={handleViewProfile}
+                    onConnect={handleConnect}
+                  />
+                )}
               </div>
 
               {/* Right Sidebar - Activity */}
