@@ -40,6 +40,19 @@ function ChatListPageContent() {
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Get return navigation parameters
+  const returnTo = searchParams.get("returnTo");
+  const placeId = searchParams.get("placeId");
+
+  // Handle back navigation
+  const handleBack = () => {
+    if (returnTo === "place" && placeId) {
+      router.push(`/place/${placeId}`);
+    } else {
+      router.push("/");
+    }
+  };
+
   // Conversation view state
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -354,8 +367,9 @@ function ChatListPageContent() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <button
-                onClick={() => router.push("/")}
+                onClick={handleBack}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title={returnTo === "place" ? `Back to place` : "Back to home"}
               >
                 <svg
                   className="w-5 h-5"

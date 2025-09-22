@@ -982,7 +982,9 @@ export default function PlacePage() {
                   activeConnectionsCount={activeConnectionsCount}
                   onEditProfile={handleEditProfile}
                   onManageConnections={() => setShowConnectionManager(true)}
-                  onMessages={() => router.push("/chat")}
+                  onMessages={() =>
+                    router.push(`/chat?returnTo=place&placeId=${placeId}`)
+                  }
                   onSignOut={signOut}
                 />
               </div>
