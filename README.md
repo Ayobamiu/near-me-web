@@ -1,4 +1,4 @@
-# NearMe Web MVP
+# Cirql Web MVP
 
 A web-based proximity social app built with Next.js and TailwindCSS.
 

@@ -37,7 +37,7 @@ export default function ActivitySidebar({
               email: user.email,
               profilePictureUrl: user.profilePictureUrl,
               interests: [], // UserPresence doesn't have interests
-              headline: user.headline || "NearMe User", // Default headline
+              headline: user.headline || "Cirql User", // Default headline
               bio: "",
               age: undefined,
               location: user.location,
@@ -71,7 +71,7 @@ export default function ActivitySidebar({
                     {user.displayName}
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {user.headline || "NearMe User"}
+                    {user.headline || "Cirql User"}
                   </p>
                 </div>
               </div>

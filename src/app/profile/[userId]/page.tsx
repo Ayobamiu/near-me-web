@@ -141,7 +141,7 @@ export default function ProfilePage() {
             </h2>
 
             <p className="text-gray-600 mb-4">
-              {profileUser.headline || "NearMe User"}
+              {profileUser.headline || "Cirql User"}
             </p>
 
             {/* Action Buttons */}

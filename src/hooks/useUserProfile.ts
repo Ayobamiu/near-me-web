@@ -36,7 +36,7 @@ export default function useUserProfile() {
           displayName: user.displayName || "Anonymous User",
           email: user.email || "",
           interests: [],
-          headline: "NearMe User",
+          headline: "Cirql User",
           bio: "",
           isVisible: true,
           distanceRadius: 100,
