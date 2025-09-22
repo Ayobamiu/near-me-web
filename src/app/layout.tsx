@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NearMe - Connect with People Nearby",
+  title: "Cirql - Connect with People Nearby",
   description:
     "Join places and connect with people in your area. Discover local communities, chat with nearby users, and build meaningful connections.",
   keywords: [
@@ -28,9 +28,9 @@ export const metadata: Metadata = {
     "places",
     "connection",
   ],
-  authors: [{ name: "NearMe Team" }],
-  creator: "NearMe",
-  publisher: "NearMe",
+  authors: [{ name: "Cirql Team" }],
+  creator: "Cirql",
+  publisher: "Cirql",
   formatDetection: {
     email: false,
     address: false,
@@ -40,17 +40,17 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
   openGraph: {
-    title: "NearMe - Connect with People Nearby",
+    title: "Cirql - Connect with People Nearby",
     description:
       "Join places and connect with people in your area. Discover local communities, chat with nearby users, and build meaningful connections.",
     url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    siteName: "NearMe",
+    siteName: "Cirql",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "NearMe - Connect with People Nearby",
+    title: "Cirql - Connect with People Nearby",
     description:
       "Join places and connect with people in your area. Discover local communities, chat with nearby users, and build meaningful connections.",
   },

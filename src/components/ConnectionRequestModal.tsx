@@ -121,7 +121,7 @@ export default function ConnectionRequestModal({
             <div>
               <h4 className="font-medium text-gray-900">{user.displayName}</h4>
               <p className="text-sm text-gray-500">
-                {user.headline || "NearMe User"}
+                {user.headline || "Cirql User"}
               </p>
             </div>
           </div>

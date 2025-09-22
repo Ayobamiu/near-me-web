@@ -60,8 +60,8 @@ export default function QRBadge({ onClose }: QRBadgeProps) {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Connect with ${user.displayName || "me"} on NearMe`,
-          text: `Scan my QR code to connect on NearMe!`,
+          title: `Connect with ${user.displayName || "me"} on Cirql`,
+          text: `Scan my QR code to connect on Cirql!`,
           url: profileUrl,
         });
       } catch {
@@ -124,7 +124,7 @@ export default function QRBadge({ onClose }: QRBadgeProps) {
 
           <div className="mb-4">
             <h3 className="font-medium text-gray-900">
-              {user.displayName || "NearMe User"}
+              {user.displayName || "Cirql User"}
             </h3>
             <p className="text-sm text-gray-600">Scan to connect instantly</p>
           </div>

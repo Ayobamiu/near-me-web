@@ -2,6 +2,8 @@ x redesign green banner to join place and accept request after sign in
 x make the design of the home page simpler, not many boxes, more text so that users can see the important stuff, Especially on Mobile 
 x Able to leave a place
 x We need a chatlist screen for user to chat all their connected users
-Create place button
-Dont auto create new place when user enter a non-Existing place
+x "Create place" button
+x Dont auto create new place when user enter a non-Existing place
+rename the app "Cirql"
 pop up Confirmation when users click to exit a place 
+Build a landing page

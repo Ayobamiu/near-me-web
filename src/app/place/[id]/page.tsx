@@ -52,7 +52,6 @@ export default function PlacePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [canJoin, setCanJoin] = useState(false);
-  const [isFirstUser, setIsFirstUser] = useState(false);
   const [geolocationError, setGeolocationError] = useState<string | null>(null);
   const [proximityCheckInterval, setProximityCheckInterval] =
     useState<NodeJS.Timeout | null>(null);
@@ -171,17 +170,12 @@ export default function PlacePage() {
       const placeSnapshot = await getDoc(placeRef);
 
       if (!placeSnapshot.exists()) {
-        // Place doesn't exist - first user creates it
-        setIsFirstUser(true);
-        setCanJoin(true);
-        setPlace({
-          id: placeId,
-          name: `Room ${placeId}`,
-          qrCode: placeId,
-          createdAt: new Date(),
-          createdBy: "current-user", // TODO: Get from auth
-          isActive: true,
-        });
+        // Place doesn't exist - show error instead of auto-creating
+        setError(
+          `Place "${placeId}" does not exist. Please create it first from the homepage.`
+        );
+        setIsLoading(false);
+        return;
       } else {
         // Place exists - check if user is already joined
         const placeData = placeSnapshot.data() as Place;
@@ -661,13 +655,6 @@ export default function PlacePage() {
       </div>
     );
   }
-
-  // Debug logging
-  console.log("🔍 UI State:", {
-    canJoin,
-    isAlreadyJoined,
-    isFirstUser,
-  });
 
   if (geolocationError) {
     return (

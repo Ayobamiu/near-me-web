@@ -45,8 +45,8 @@ export default function PlaceShareModal({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Join me at ${place.name} on NearMe`,
-          text: `I'm at ${place.name}. Join me on NearMe!`,
+          title: `Join me at ${place.name} on Cirql`,
+          text: `I'm at ${place.name}. Join me on Cirql!`,
           url: shareUrl,
         });
       } catch {
@@ -92,7 +92,7 @@ export default function PlaceShareModal({
             </div>
             <div>
               <h4 className="font-medium text-gray-900">{place.name}</h4>
-              <p className="text-sm text-gray-500">Join this place on NearMe</p>
+              <p className="text-sm text-gray-500">Join this place on Cirql</p>
             </div>
           </div>
         </div>
@@ -153,7 +153,7 @@ export default function PlaceShareModal({
         <div className="mt-4 p-3 bg-blue-50 rounded-md">
           <p className="text-xs text-blue-800">
             💡 <strong>Tip:</strong> Anyone with this link can join your place
-            and see who else is there!
+            on Cirql and see who else is there!
           </p>
         </div>
       </div>

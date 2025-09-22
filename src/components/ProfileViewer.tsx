@@ -57,7 +57,7 @@ export default function ProfileViewer({ user, onClose }: ProfileViewerProps) {
           displayName: user.displayName,
           email: user.email,
           interests: user.interests || [],
-          headline: user.headline || "NearMe User",
+          headline: user.headline || "Cirql User",
           bio: user.bio || "",
           age: user.age,
           location: user.location

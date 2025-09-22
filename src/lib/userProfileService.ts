@@ -48,7 +48,7 @@ class UserProfileService {
                     displayName: data.displayName || data.name || 'Unknown User',
                     email: data.email || '',
                     interests: data.interests || [],
-                    headline: data.headline || 'NearMe User',
+                    headline: data.headline || 'Cirql User',
                     bio: data.bio || '',
                     age: data.age || '',
                     location: data.location || '',

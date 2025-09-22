@@ -43,7 +43,7 @@ export default function ProfileManager({
           displayName: user.displayName || "Anonymous User",
           email: user.email || "",
           interests: [],
-          headline: "NearMe User",
+          headline: "Cirql User",
           bio: "",
           isVisible: true,
           distanceRadius: 100,
@@ -135,7 +135,9 @@ export default function ProfileManager({
       <div className="bg-white rounded-none sm:rounded-lg max-w-2xl w-full h-full sm:max-h-[90vh] overflow-y-auto">
         <div className="p-4 sm:p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Profile</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              Edit Profile
+            </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl p-2 -mr-2"

@@ -114,7 +114,7 @@ export default function ProfileSidebar({
               email: user.email || "",
               profilePictureUrl: user.photoURL || undefined,
               interests: [],
-              headline: "NearMe User",
+              headline: "Cirql User",
               bio: "",
               age: undefined,
               location: undefined,

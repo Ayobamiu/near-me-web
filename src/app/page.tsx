@@ -234,15 +234,12 @@ export default function Home() {
       }
 
       if (!placeSnapshot.exists()) {
-        // Place doesn't exist - first user creates it
-        await createPlace({
-          placeId,
-          name: `Room ${placeId}`,
-          qrCode: placeId,
-          lat: userLocation.lat,
-          lng: userLocation.lng,
-          createdBy: user.uid,
-        });
+        // Place doesn't exist - show error instead of auto-creating
+        setError(
+          `Place "${placeId}" does not exist. Click "Create Place" to create it.`
+        );
+        setIsLoading(false);
+        return;
       }
 
       // Join the place (API will handle proximity check)
@@ -301,6 +298,86 @@ export default function Home() {
 
   const handleRejoinPlace = async (placeId: string) => {
     await handleJoinPlace(placeId);
+  };
+
+  const handleCreatePlace = async (placeId: string) => {
+    if (!user) {
+      setError("Please sign in first");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setGeolocationError(null);
+
+    try {
+      // Get user's current location
+      const position = await getCurrentPosition();
+      const userLocation = { lat: position.lat, lng: position.lng };
+
+      // Ensure user profile exists
+      const userProfileDoc = await getDoc(doc(db, "userProfiles", user.uid));
+      if (!userProfileDoc.exists()) {
+        const userProfile = {
+          id: user.uid,
+          displayName: user.displayName || "Anonymous User",
+          email: user.email || "anonymous@example.com",
+          profilePictureUrl: user.photoURL || "",
+          interests: [],
+          bio: "Just joined!",
+          createdAt: new Date(),
+          isOnline: true,
+        };
+        await setDoc(doc(db, "userProfiles", user.uid), userProfile);
+      }
+
+      // Create the place
+      await createPlace({
+        placeId,
+        name: `Room ${placeId}`,
+        qrCode: placeId,
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        createdBy: user.uid,
+      });
+
+      // Join the place after creating it
+      console.log("🏠 Homepage: Creating and joining place", placeId, "for user", user.uid);
+      const joinResult = await joinPlace(placeId, {
+        userId: user.uid,
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+      });
+      console.log("🏠 Homepage: Join result:", joinResult);
+
+      // Set flag to indicate user came from homepage auto-join
+      sessionStorage.setItem("cameFromHomepage", "true");
+
+      // Navigate to place page - user is already joined
+      console.log("🏠 Homepage: Navigating to place page");
+      router.push(`/place/${placeId}`);
+
+      // Refresh recent places after joining
+      loadRecentPlaces();
+    } catch (error) {
+      console.error("Error creating place:", error);
+
+      // Check if it's a geolocation error
+      const errorWithCode = error as Error & { code?: number };
+      if (
+        error instanceof GeolocationPositionError ||
+        errorWithCode?.code === 1 ||
+        errorWithCode?.message?.includes("geolocation") ||
+        errorWithCode?.message?.includes("location") ||
+        errorWithCode?.message?.includes("Location access")
+      ) {
+        setGeolocationError((error as Error).message);
+      } else {
+        setError("Unable to create place. Please try again.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Show intent experiences as full-screen overlays
@@ -472,7 +549,7 @@ export default function Home() {
         )}
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">NearMe</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Cirql</h1>
           <p className="text-gray-600">
             Scan a QR code or enter a place code to join
           </p>
@@ -627,13 +704,23 @@ export default function Home() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-                <button
-                  type="submit"
-                  disabled={!qrCode.trim() || isLoading}
-                  className="w-full py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoading ? "Joining..." : "Join Place"}
-                </button>
+                <div className="flex space-x-2">
+                  <button
+                    type="submit"
+                    disabled={!qrCode.trim() || isLoading}
+                    className="flex-1 py-2 px-4 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoading ? "Joining..." : "Join Place"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCreatePlace(qrCode.trim())}
+                    disabled={!qrCode.trim() || isLoading}
+                    className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isLoading ? "Creating..." : "Create Place"}
+                  </button>
+                </div>
               </form>
             </div>
           ) : (
