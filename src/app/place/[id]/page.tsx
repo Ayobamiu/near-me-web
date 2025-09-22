@@ -927,7 +927,9 @@ export default function PlacePage() {
           </div>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => router.push("/chat")}
+              onClick={() =>
+                router.push(`/chat?returnTo=place&placeId=${placeId}`)
+              }
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
               title="Messages"
             >
