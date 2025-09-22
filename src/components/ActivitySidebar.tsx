@@ -2,11 +2,12 @@
 
 import React from "react";
 import { usePresence } from "@/contexts/PresenceContext";
+import { User } from "@/types";
 
 interface ActivitySidebarProps {
-  usersInRange: any[];
-  usersOutOfRange: any[];
-  onViewProfile: (user: any) => void;
+  usersInRange: User[];
+  usersOutOfRange: User[];
+  onViewProfile: (user: User) => void;
 }
 
 export default function ActivitySidebar({

@@ -1,11 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, UserConnection } from "@/types";
-import { useAuth } from "@/contexts/AuthContext";
+import { User } from "@/types";
 import { usePresence } from "@/contexts/PresenceContext";
-import connectionService from "@/lib/connectionService";
-import UserCard from "@/components/UserCard";
 
 interface PeopleGridProps {
   usersInRange: User[];
@@ -23,7 +20,6 @@ export default function PeopleGrid({
   onViewProfile,
   onConnect,
 }: PeopleGridProps) {
-  const { user: currentUser } = useAuth();
   const { onlineUsers } = usePresence();
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("distance");

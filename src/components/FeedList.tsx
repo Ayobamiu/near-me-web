@@ -86,7 +86,7 @@ export default function FeedList({
     if (posts.length > 0) {
       loadAuthors();
     }
-  }, [posts]); // Only depend on posts, not on authors or loadingAuthors
+  }, [posts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Group posts by date
   const groupedPosts = posts.reduce((groups, post) => {

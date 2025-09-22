@@ -67,7 +67,7 @@ export default function PlaceFeed({ placeId, onViewProfile }: PlaceFeedProps) {
   // Load posts on mount and when placeId changes
   useEffect(() => {
     loadPosts(true);
-  }, [placeId]);
+  }, [placeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle creating a new post
   const handleCreatePost = async (postData: {

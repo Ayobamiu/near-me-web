@@ -17,7 +17,6 @@ import {
 } from "@/lib/placeService";
 import connectionService from "@/lib/connectionService";
 // import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
-import UserCard from "@/components/UserCard";
 import ProfileManager from "@/components/ProfileManager";
 import ProfileViewer from "@/components/ProfileViewer";
 import ConnectionManager from "@/components/ConnectionManager";

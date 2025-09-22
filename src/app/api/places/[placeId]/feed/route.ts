@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, limit, startAfter, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, startAfter, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { FeedPost } from '@/types';
 
 // GET /api/places/[placeId]/feed - Get feed posts for a place
