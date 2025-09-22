@@ -31,6 +31,12 @@ class UserProfileService {
     // Get user profile by ID
     async getUserProfile(userId: string): Promise<UserProfile | null> {
         try {
+            // Check if userId is valid
+            if (!userId || typeof userId !== 'string') {
+                console.error('UserProfileService: Invalid userId provided:', userId);
+                return null;
+            }
+
             console.log('UserProfileService: Fetching profile for user:', userId);
             const userDoc = doc(db, this.profilesRef, userId);
             const userSnap = await getDoc(userDoc);
