@@ -88,9 +88,14 @@ export default function ProfileSidebar({
         </div>
         <div className="flex justify-between text-xs text-gray-600 mb-2">
           <span>Pending Requests</span>
-          <span className="font-medium text-orange-600">
-            {pendingConnectionsCount}
-          </span>
+          <div className="flex items-center gap-1">
+            {pendingConnectionsCount > 0 && (
+              <span className="animate-pulse w-2 h-2 bg-orange-600 rounded-full mr-2"></span>
+            )}
+            <span className="font-medium text-orange-600">
+              {pendingConnectionsCount}
+            </span>
+          </div>
         </div>
         {/* TODO: Connect to actual places user has visited */}
         <div className="flex justify-between text-xs text-gray-600">
@@ -135,9 +140,16 @@ export default function ProfileSidebar({
         </button>
         <button
           onClick={onManageConnections}
-          className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors border-b border-transparent hover:border-blue-200"
+          className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors border-b border-transparent hover:border-blue-200 relative"
         >
-          🤝 Manage Connections
+          <span className="flex items-center justify-between">
+            <span>🤝 Manage Connections</span>
+            {pendingConnectionsCount > 0 && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 animate-pulse">
+                {pendingConnectionsCount}
+              </span>
+            )}
+          </span>
         </button>
         <button
           onClick={onEditProfile}

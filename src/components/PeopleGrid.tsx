@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User } from "@/types";
 import { usePresence } from "@/contexts/PresenceContext";
+import { useAuth } from "@/contexts/AuthContext";
+import connectionService from "@/lib/connectionService";
 
 interface PeopleGridProps {
   usersInRange: User[];
@@ -21,12 +23,64 @@ export default function PeopleGrid({
   onConnect,
 }: PeopleGridProps) {
   const { onlineUsers } = usePresence();
+  const { user } = useAuth();
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("distance");
   const [searchQuery, setSearchQuery] = useState("");
+  const [connectionStatuses, setConnectionStatuses] = useState<
+    Record<string, "none" | "pending" | "connected" | "loading">
+  >({});
 
   // Combine all users
   const allUsers = [...usersInRange, ...usersOutOfRange];
+
+  // Check connection status for all users
+  const checkConnectionStatuses = async () => {
+    if (!user) return;
+
+    const statuses: Record<
+      string,
+      "none" | "pending" | "connected" | "loading"
+    > = {};
+
+    // Initialize all users as 'none'
+    allUsers.forEach((userItem) => {
+      statuses[userItem.id] = "none";
+    });
+
+    setConnectionStatuses(statuses);
+
+    // Check each user's connection status
+    for (const userItem of allUsers) {
+      try {
+        const connection = await connectionService.getConnectionStatus(
+          user.uid,
+          userItem.id
+        );
+        if (connection) {
+          if (connection.status === "accepted") {
+            statuses[userItem.id] = "connected";
+          } else if (connection.status === "pending") {
+            statuses[userItem.id] = "pending";
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error checking connection status for ${userItem.id}:`,
+          error
+        );
+      }
+    }
+
+    setConnectionStatuses({ ...statuses });
+  };
+
+  // Check connection statuses when users change
+  useEffect(() => {
+    if (allUsers.length > 0 && user) {
+      checkConnectionStatuses();
+    }
+  }, [allUsers.length, user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debug logging
   console.log("PeopleGrid Debug:", {
@@ -36,6 +90,7 @@ export default function PeopleGrid({
     searchQuery,
     filter,
     onlineUsers: onlineUsers.length,
+    connectionStatuses,
   });
 
   // Filter users based on selected filter
@@ -277,13 +332,52 @@ export default function PeopleGrid({
 
                     {/* Connect Button */}
                     <button
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation(); // Prevent card click
-                        onConnect(user.id);
+
+                        // Set loading state
+                        setConnectionStatuses((prev) => ({
+                          ...prev,
+                          [user.id]: "loading",
+                        }));
+
+                        try {
+                          await onConnect(user.id);
+                          // Update to pending state after successful request
+                          setConnectionStatuses((prev) => ({
+                            ...prev,
+                            [user.id]: "pending",
+                          }));
+                        } catch {
+                          // Reset to none if failed
+                          setConnectionStatuses((prev) => ({
+                            ...prev,
+                            [user.id]: "none",
+                          }));
+                        }
                       }}
-                      className="w-full text-xs text-white bg-blue-600 hover:bg-blue-700 font-medium py-2 px-3 rounded-lg transition-colors"
+                      disabled={
+                        connectionStatuses[user.id] === "loading" ||
+                        connectionStatuses[user.id] === "pending" ||
+                        connectionStatuses[user.id] === "connected"
+                      }
+                      className={`w-full text-xs font-medium py-2 px-3 rounded-lg transition-colors ${
+                        connectionStatuses[user.id] === "connected"
+                          ? "text-green-700 bg-green-100 cursor-not-allowed"
+                          : connectionStatuses[user.id] === "pending"
+                          ? "text-yellow-700 bg-yellow-100 cursor-not-allowed"
+                          : connectionStatuses[user.id] === "loading"
+                          ? "text-gray-700 bg-gray-100 cursor-not-allowed"
+                          : "text-white bg-blue-600 hover:bg-blue-700"
+                      }`}
                     >
-                      Connect
+                      {connectionStatuses[user.id] === "connected" &&
+                        "✓ Connected"}
+                      {connectionStatuses[user.id] === "pending" &&
+                        "⏳ Pending"}
+                      {connectionStatuses[user.id] === "loading" &&
+                        "⏳ Sending..."}
+                      {connectionStatuses[user.id] === "none" && "Connect"}
                     </button>
                   </div>
                 </div>
