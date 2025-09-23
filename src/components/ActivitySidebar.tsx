@@ -89,10 +89,10 @@ export default function ActivitySidebar({
           Place Activity
         </h3>
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs">
+          {/* <div className="flex items-center justify-between text-xs">
             <span className="text-gray-600">People Nearby</span>
             <span className="font-medium text-blue-600">{totalUsers}</span>
-          </div>
+          </div> */}
           <div className="flex items-center justify-between text-xs">
             <span className="text-gray-600">Currently Here</span>
             <span className="font-medium text-green-600">

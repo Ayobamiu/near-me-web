@@ -76,10 +76,10 @@ export default function ProfileSidebar({
       {/* Quick Stats */}
       <div className="border-t border-gray-100 pt-3 mb-4">
         {/* TODO: Connect to actual user's feed posts count */}
-        <div className="flex justify-between text-xs text-gray-600 mb-2">
+        {/* <div className="flex justify-between text-xs text-gray-600 mb-2">
           <span>Posts</span>
           <span className="font-medium text-gray-400">-</span>
-        </div>
+        </div> */}
         <div className="flex justify-between text-xs text-gray-600 mb-2">
           <span>Active Connections</span>
           <span className="font-medium text-green-600">
@@ -98,10 +98,10 @@ export default function ProfileSidebar({
           </div>
         </div>
         {/* TODO: Connect to actual places user has visited */}
-        <div className="flex justify-between text-xs text-gray-600">
+        {/* <div className="flex justify-between text-xs text-gray-600">
           <span>Places Visited</span>
           <span className="font-medium text-gray-400">-</span>
-        </div>
+        </div> */}
       </div>
 
       {/* Quick Actions */}
