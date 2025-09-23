@@ -222,7 +222,7 @@ export default function PeopleGrid({
         </div>
 
         {/* Sort Dropdown */}
-        <select
+        {/* <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortType)}
           className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -230,11 +230,11 @@ export default function PeopleGrid({
           <option value="distance">Sort by Distance</option>
           <option value="name">Sort by Name</option>
           <option value="recent">Sort by Recent</option>
-        </select>
+        </select> */}
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
+      {/* <div className="flex gap-2 mb-6">
         {[
           { key: "all", label: "All", count: getFilterCount("all") },
           { key: "online", label: "Online", count: getFilterCount("online") },
@@ -253,7 +253,7 @@ export default function PeopleGrid({
             {label} ({count})
           </button>
         ))}
-      </div>
+      </div> */}
 
       {/* People Grid */}
       {filteredAndSortedUsers.length === 0 ? (

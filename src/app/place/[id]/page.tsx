@@ -64,7 +64,7 @@ export default function PlacePage() {
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const [activeConnectionsCount, setActiveConnectionsCount] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"feed" | "people">("feed");
+  const [activeTab, setActiveTab] = useState<"feed" | "people">("people");
 
   const [connections, setConnections] = useState<UserConnection[]>([]);
   const [isLoadingConnections, setIsLoadingConnections] = useState(true);
@@ -989,8 +989,8 @@ export default function PlacePage() {
                   <div className="border-b border-gray-200">
                     <nav className="-mb-px flex space-x-8">
                       {[
-                        { id: "feed", label: "Feed", icon: "📝" },
                         { id: "people", label: "People", icon: "👥" },
+                        { id: "feed", label: "Feed", icon: "📝" },
                       ].map((tab) => (
                         <button
                           key={tab.id}
