@@ -173,7 +173,7 @@ export default function PlacePage() {
       if (!placeSnapshot.exists()) {
         // Place doesn't exist - show error instead of auto-creating
         setError(
-          `Place "${placeId}" does not exist. Please create it first from the homepage.`
+          `Place "${placeId}" does not exist. Please create it first from the dashboard.`
         );
         setIsLoading(false);
         return;
@@ -200,15 +200,15 @@ export default function PlacePage() {
               }
               console.log("✅ User already joined this place");
 
-              // Clear the homepage flag if it exists
-              if (sessionStorage.getItem("cameFromHomepage") === "true") {
-                console.log("🧹 Clearing cameFromHomepage flag");
-                sessionStorage.removeItem("cameFromHomepage");
+              // Clear the dashboard flag if it exists
+              if (sessionStorage.getItem("cameFromDashboard") === "true") {
+                console.log("🧹 Clearing cameFromDashboard flag");
+                sessionStorage.removeItem("cameFromDashboard");
 
-                // Ensure user is marked as online after joining from homepage
+                // Ensure user is marked as online after joining from dashboard
                 try {
                   await updateUserOnlineStatus(placeId, user.uid, true);
-                  console.log("✅ User marked as online after homepage join");
+                  console.log("✅ User marked as online after dashboard join");
                 } catch (error) {
                   console.error("Error updating user online status:", error);
                 }
@@ -268,14 +268,14 @@ export default function PlacePage() {
               return; // Exit early since user is already joined
             }
           } else {
-            // User is not in the place yet, check if they came from homepage auto-join
-            const cameFromHomepage =
-              sessionStorage.getItem("cameFromHomepage") === "true";
+            // User is not in the place yet, check if they came from dashboard auto-join
+            const cameFromDashboard =
+              sessionStorage.getItem("cameFromDashboard") === "true";
 
-            if (cameFromHomepage && position) {
-              // User came from homepage auto-join, actually join them to the place
+            if (cameFromDashboard && position) {
+              // User came from dashboard auto-join, actually join them to the place
               console.log(
-                "🔄 User came from homepage, auto-joining to place..."
+                "🔄 User came from dashboard, auto-joining to place..."
               );
 
               try {
@@ -291,7 +291,7 @@ export default function PlacePage() {
                 await updateLocation(position.lat, position.lng);
 
                 // Clear the flag
-                sessionStorage.removeItem("cameFromHomepage");
+                sessionStorage.removeItem("cameFromDashboard");
 
                 // Ensure user is marked as online
                 try {
@@ -348,7 +348,7 @@ export default function PlacePage() {
               }
             }
 
-            // Normal flow for users not coming from homepage
+            // Normal flow for users not coming from dashboard
             console.log("🔄 User not in place, showing join options...");
           }
         } else {
@@ -456,12 +456,14 @@ export default function PlacePage() {
     return () => {
       stopProximityMonitoring();
       // Only mark user as offline when actually leaving the place page
-      // Don't mark as offline when navigating from homepage to place page
-      if (user && placeId && !sessionStorage.getItem("cameFromHomepage")) {
+      // Don't mark as offline when navigating from dashboard to place page
+      if (user && placeId && !sessionStorage.getItem("cameFromDashboard")) {
         console.log("🚪 User leaving place page, marking as offline");
         leavePlace(placeId, { userId: user.uid }).catch(console.error);
       } else {
-        console.log("🚪 User navigating from homepage, not marking as offline");
+        console.log(
+          "🚪 User navigating from dashboard, not marking as offline"
+        );
       }
     };
   }, [user, placeId, stopProximityMonitoring]);
@@ -552,8 +554,8 @@ export default function PlacePage() {
       // Stop proximity monitoring
       stopProximityMonitoring();
 
-      // Navigate back to homepage
-      router.push("/");
+      // Navigate back to dashboard
+      router.push("/dashboard");
     } catch (error) {
       console.error("Error leaving place:", error);
       setError("Failed to leave place. Please try again.");
@@ -635,7 +637,7 @@ export default function PlacePage() {
               Please sign in to join places and connect with people nearby
             </p>
             <button
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/dashboard")}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               Go to Sign In
@@ -747,7 +749,7 @@ export default function PlacePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 min-w-0 flex-1">
               <button
-                onClick={() => router.push("/")}
+                onClick={() => router.push("/dashboard")}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
                 <svg

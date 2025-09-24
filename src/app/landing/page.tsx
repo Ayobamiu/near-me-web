@@ -32,7 +32,7 @@ export default function LandingPage() {
   }, []);
 
   const handleGetStarted = () => {
-    router.push("/");
+    router.push("/auth");
   };
 
   return (

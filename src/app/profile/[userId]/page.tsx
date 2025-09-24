@@ -54,8 +54,8 @@ export default function ProfilePage() {
 
   const handleConnectionSuccess = () => {
     setShowConnectionModal(false);
-    // Redirect to homepage with success message
-    router.push("/?connectionSent=true");
+    // Redirect to dashboard with success message
+    router.push("/dashboard?connectionSent=true");
   };
 
   if (isLoading) {

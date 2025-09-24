@@ -137,11 +137,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         // Redirect to specific place
         router.push(`/place/${placeId}`);
       } else if (returnTo === "places") {
-        // Redirect to places/home
-        router.push("/");
+        // Redirect to dashboard
+        router.push("/dashboard");
       } else {
-        // Default redirect to home
-        router.push("/");
+        // Default redirect to dashboard
+        router.push("/dashboard");
       }
 
       onComplete();

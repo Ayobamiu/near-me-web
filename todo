@@ -5,5 +5,8 @@ x We need a chatlist screen for user to chat all their connected users
 x "Create place" button
 x Dont auto create new place when user enter a non-Existing place
 x rename the app "Cirql"
+put QR code icon on the place page. Quick access for me to share my QR Badge
+On the "Your QR Badge", put a link i can copy
+on the "Share Place" modal. put a QR code there 
 pop up Confirmation when users click to exit a place 
 Build a landing page

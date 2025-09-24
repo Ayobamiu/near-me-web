@@ -44,7 +44,7 @@ export default function UserHeader({
     try {
       await signOut();
       setShowUserMenu(false);
-      router.push("/");
+      router.push("/dashboard");
     } catch (error) {
       console.error("Error signing out:", error);
     }

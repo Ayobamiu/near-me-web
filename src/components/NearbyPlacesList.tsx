@@ -49,7 +49,7 @@ export default function NearbyPlacesList({
 
   const handleJoinPlace = async (placeId: string) => {
     if (!user) {
-      router.push("/");
+      router.push("/dashboard");
       return;
     }
     onJoinPlace(placeId);
