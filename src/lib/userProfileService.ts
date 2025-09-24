@@ -20,6 +20,8 @@ export interface UserProfile {
     };
     isVisible?: boolean;
     distanceRadius?: number;
+    showAge?: boolean;
+    showEmail?: boolean;
     createdAt: Date | { toDate: () => Date };
     updatedAt: Date | { toDate: () => Date };
     joinedAt?: Date | { toDate: () => Date };
@@ -57,6 +59,8 @@ class UserProfileService {
                     socialLinks: data.socialLinks || {},
                     isVisible: data.isVisible !== false, // Default to true
                     distanceRadius: data.distanceRadius || 100,
+                    showAge: data.showAge || false,
+                    showEmail: data.showEmail || false,
                     createdAt: data.createdAt,
                     updatedAt: data.updatedAt,
                 };
