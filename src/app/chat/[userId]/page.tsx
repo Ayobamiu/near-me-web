@@ -79,7 +79,6 @@ export default function ChatConversationPage() {
 
     setIsSending(true);
     try {
-      console.log(`🔍 Sending message via chatService`);
 
       const result = await chatService.sendMessage({
         senderId: user.uid,
@@ -88,7 +87,6 @@ export default function ChatConversationPage() {
         messageType: "text",
       });
 
-      console.log(`✅ Message sent successfully with ID: ${result.messageId}`);
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);

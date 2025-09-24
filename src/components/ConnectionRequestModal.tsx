@@ -19,8 +19,6 @@ export default function ConnectionRequestModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  console.log("ConnectionRequestModal rendering", { user, currentUser });
-
   const handleSendRequest = async () => {
     if (!user.id) return;
 

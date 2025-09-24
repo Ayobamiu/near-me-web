@@ -39,7 +39,6 @@ class UserProfileService {
                 return null;
             }
 
-            console.log('UserProfileService: Fetching profile for user:', userId);
             const userDoc = doc(db, this.profilesRef, userId);
             const userSnap = await getDoc(userDoc);
 
@@ -64,10 +63,8 @@ class UserProfileService {
                     createdAt: data.createdAt,
                     updatedAt: data.updatedAt,
                 };
-                console.log('UserProfileService: Profile loaded:', profile);
                 return profile;
             } else {
-                console.log('UserProfileService: Profile not found for user:', userId);
                 return null;
             }
         } catch (error) {
@@ -79,7 +76,6 @@ class UserProfileService {
     // Get multiple user profiles by IDs
     async getManyUserProfiles(userIds: string[]): Promise<UserProfile[]> {
         try {
-            console.log('UserProfileService: Fetching profiles for users:', userIds);
             const profiles: UserProfile[] = [];
 
             // Use Promise.all to fetch all profiles concurrently
@@ -97,7 +93,6 @@ class UserProfileService {
                 }
             });
 
-            console.log('UserProfileService: Fetched profiles:', profiles.length);
             return profiles;
         } catch (error) {
             console.error('UserProfileService: Error fetching multiple profiles:', error);
@@ -108,7 +103,6 @@ class UserProfileService {
     // Create or update user profile
     async updateUserProfile(userId: string, profileData: Partial<UserProfile>): Promise<void> {
         try {
-            console.log('UserProfileService: Updating profile for user:', userId, profileData);
             const userDoc = doc(db, this.profilesRef, userId);
 
             // Check if profile exists
@@ -118,12 +112,10 @@ class UserProfileService {
                 ...profileData,
                 updatedAt: serverTimestamp(),
             };
-            console.log({ updateData, existingProfile });
 
             if (existingProfile) {
                 // Update existing profile
                 await updateDoc(userDoc, updateData);
-                console.log('UserProfileService: Profile updated successfully');
             } else {
                 // Create new profile
                 await setDoc(userDoc, {
@@ -132,7 +124,6 @@ class UserProfileService {
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                 });
-                console.log('UserProfileService: Profile created successfully');
             }
         } catch (error) {
             console.error('UserProfileService: Error updating profile:', error);
@@ -143,7 +134,6 @@ class UserProfileService {
     // Update user interests
     async updateUserInterests(userId: string, interests: string[]): Promise<void> {
         try {
-            console.log('UserProfileService: Updating interests for user:', userId, interests);
             await this.updateUserProfile(userId, { interests });
         } catch (error) {
             console.error('UserProfileService: Error updating interests:', error);
@@ -154,7 +144,6 @@ class UserProfileService {
     // Update user visibility
     async updateUserVisibility(userId: string, isVisible: boolean): Promise<void> {
         try {
-            console.log('UserProfileService: Updating visibility for user:', userId, isVisible);
             await this.updateUserProfile(userId, { isVisible });
         } catch (error) {
             console.error('UserProfileService: Error updating visibility:', error);
@@ -166,7 +155,6 @@ class UserProfileService {
     async getUserDisplayName(userId: string): Promise<string> {
         try {
             const profile = await this.getUserProfile(userId);
-            console.log('UserProfileService: Display name:', profile?.displayName);
             return profile?.displayName || 'Unknown User';
         } catch (error) {
             console.error('UserProfileService: Error getting display name:', error);

@@ -83,34 +83,19 @@ export default function PeopleGrid({
   }, [allUsers.length, user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debug logging
-  console.log("PeopleGrid Debug:", {
-    usersInRange: usersInRange.length,
-    usersOutOfRange: usersOutOfRange.length,
-    allUsers: allUsers.length,
-    searchQuery,
-    filter,
-    onlineUsers: onlineUsers.length,
-    connectionStatuses,
-  });
 
   // Filter users based on selected filter
   const getFilteredUsers = () => {
     let filtered = allUsers;
-    console.log("getFilteredUsers - Initial filtered count:", filtered.length);
 
     // Apply search filter
     if (searchQuery.trim()) {
-      console.log("Applying search filter for:", searchQuery);
       const beforeSearch = filtered.length;
       filtered = filtered.filter(
         (user) =>
           user.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           user.email.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      console.log("Search results:", {
-        beforeSearch,
-        afterSearch: filtered.length,
-      });
     }
 
     // Apply category filter
@@ -132,11 +117,6 @@ export default function PeopleGrid({
         // Keep the current filtered results (don't reset to allUsers)
         break;
     }
-    console.log("Category filter results:", {
-      filter,
-      beforeCategoryFilter,
-      afterCategoryFilter: filtered.length,
-    });
 
     return filtered;
   };
@@ -168,10 +148,6 @@ export default function PeopleGrid({
   };
 
   const filteredAndSortedUsers = getSortedUsers(getFilteredUsers());
-  console.log(
-    "Final filtered and sorted users:",
-    filteredAndSortedUsers.length
-  );
 
   const getFilterCount = (filterType: FilterType) => {
     switch (filterType) {

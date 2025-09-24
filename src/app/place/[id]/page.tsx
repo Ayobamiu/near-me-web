@@ -72,7 +72,6 @@ export default function PlacePage() {
   const [errorConnections, setErrorConnections] = useState("");
 
   const loadConnectionCounts = useCallback(async () => {
-    console.log("Loading connection counts");
     if (!user) return;
 
     try {
@@ -105,11 +104,9 @@ export default function PlacePage() {
 
     // Prevent multiple instances
     if (proximityCheckInterval) {
-      console.log("⚠️ Proximity monitoring already running, skipping");
       return;
     }
 
-    console.log("🚀 Starting proximity monitoring for user:", user.uid);
 
     const interval = setInterval(async () => {
       try {
@@ -122,17 +119,9 @@ export default function PlacePage() {
           100
         );
 
-        console.log("📍 Proximity check:", {
-          userLat: position.lat,
-          userLng: position.lng,
-          originLat: place.originLocation!.lat,
-          originLng: place.originLocation!.lng,
-          isWithinRange,
-        });
 
         if (!isWithinRange) {
           // User moved out of range
-          console.log("❌ User out of range, marking as offline");
           await markUserOutOfRange(placeId, user.uid);
           setCanJoin(false);
           setError(
@@ -142,7 +131,6 @@ export default function PlacePage() {
           setProximityCheckInterval(null);
         } else {
           // Update user's location and online status
-          console.log("✅ User within range, updating online status");
           await updateUserOnlineStatus(placeId, user.uid, true);
           // setUserLocation({ lat: position.lat, lng: position.lng });
         }
@@ -192,23 +180,19 @@ export default function PlacePage() {
             const userData = userInPlaceSnapshot.data();
             if (userData.isOnline && !userData.outOfRange) {
               // User is already joined and online
-              console.log("✅ Setting isAlreadyJoined to true");
               setIsAlreadyJoined(true);
               setCanJoin(true);
               if (position) {
                 // setUserLocation({ lat: position.lat, lng: position.lng });
               }
-              console.log("✅ User already joined this place");
 
               // Clear the dashboard flag if it exists
               if (sessionStorage.getItem("cameFromDashboard") === "true") {
-                console.log("🧹 Clearing cameFromDashboard flag");
                 sessionStorage.removeItem("cameFromDashboard");
 
                 // Ensure user is marked as online after joining from dashboard
                 try {
                   await updateUserOnlineStatus(placeId, user.uid, true);
-                  console.log("✅ User marked as online after dashboard join");
                 } catch (error) {
                   console.error("Error updating user online status:", error);
                 }
@@ -227,13 +211,6 @@ export default function PlacePage() {
                   // Debug: Log all user documents
                   snapshot.docs.forEach((doc) => {
                     const data = doc.data();
-                    console.log("👤 User in place:", {
-                      id: doc.id,
-                      userId: data.userId,
-                      isOnline: data.isOnline,
-                      outOfRange: data.outOfRange,
-                      location: data.location,
-                    });
                   });
 
                   if (placeData.originLocation) {
@@ -243,10 +220,6 @@ export default function PlacePage() {
                         placeId,
                         placeData.originLocation.lat,
                         placeData.originLocation.lng
-                      );
-                      console.log(
-                        "🔍 Fetched users from API:",
-                        `In range: ${response.usersInRange.length}, Out of range: ${response.usersOutOfRange.length}`
                       );
                       setUsersInRange(response.usersInRange);
                       setUsersOutOfRange(response.usersOutOfRange);
@@ -258,11 +231,7 @@ export default function PlacePage() {
               );
 
               // Start proximity monitoring for already joined users (with delay)
-              console.log(
-                "⏰ Scheduling proximity monitoring to start in 2 seconds"
-              );
               setTimeout(() => {
-                console.log("⏰ Starting proximity monitoring after delay");
                 startProximityMonitoring();
               }, 2000); // 2 second delay to ensure user is properly set up
               return; // Exit early since user is already joined
@@ -274,9 +243,6 @@ export default function PlacePage() {
 
             if (cameFromDashboard && position) {
               // User came from dashboard auto-join, actually join them to the place
-              console.log(
-                "🔄 User came from dashboard, auto-joining to place..."
-              );
 
               try {
                 await joinPlace(placeId, {
@@ -284,7 +250,6 @@ export default function PlacePage() {
                   lat: position.lat,
                   lng: position.lng,
                 });
-                console.log("✅ User auto-joined to place successfully");
 
                 // Update global presence
                 await updateCurrentPlace(placeId);
@@ -296,7 +261,6 @@ export default function PlacePage() {
                 // Ensure user is marked as online
                 try {
                   await updateUserOnlineStatus(placeId, user.uid, true);
-                  console.log("✅ User marked as online after auto-join");
                 } catch (error) {
                   console.error("Error updating user online status:", error);
                 }
@@ -309,11 +273,6 @@ export default function PlacePage() {
                 onSnapshot(
                   collection(db, "places", placeId, "users"),
                   async (snapshot) => {
-                    console.log(
-                      "📡 Real-time update received:",
-                      snapshot.size,
-                      "users"
-                    );
 
                     if (placeData.originLocation) {
                       try {
@@ -349,7 +308,6 @@ export default function PlacePage() {
             }
 
             // Normal flow for users not coming from dashboard
-            console.log("🔄 User not in place, showing join options...");
           }
         } else {
           // For non-authenticated users, just set the place and allow viewing
@@ -366,17 +324,11 @@ export default function PlacePage() {
 
           const withinRadius = distance <= 100; // 100 meters
           setCanJoin(withinRadius);
-          console.log("🔍 Within radius:", withinRadius);
           if (withinRadius) {
             // Set up real-time listener for users in this place
             onSnapshot(
               collection(db, "places", placeId, "users"),
               async (snapshot) => {
-                console.log(
-                  "📡 Real-time update received:",
-                  snapshot.size,
-                  "users"
-                );
 
                 if (placeData.originLocation) {
                   try {
@@ -385,10 +337,6 @@ export default function PlacePage() {
                       placeId,
                       placeData.originLocation.lat,
                       placeData.originLocation.lng
-                    );
-                    console.log(
-                      "✅ Final users list:",
-                      `In range: ${response.usersInRange.length}, Out of range: ${response.usersOutOfRange.length}`
                     );
                     setUsersInRange(response.usersInRange);
                     setUsersOutOfRange(response.usersOutOfRange);
@@ -458,12 +406,8 @@ export default function PlacePage() {
       // Only mark user as offline when actually leaving the place page
       // Don't mark as offline when navigating from dashboard to place page
       if (user && placeId && !sessionStorage.getItem("cameFromDashboard")) {
-        console.log("🚪 User leaving place page, marking as offline");
         leavePlace(placeId, { userId: user.uid }).catch(console.error);
       } else {
-        console.log(
-          "🚪 User navigating from dashboard, not marking as offline"
-        );
       }
     };
   }, [user, placeId, stopProximityMonitoring]);
@@ -542,11 +486,9 @@ export default function PlacePage() {
     if (!user || !placeId) return;
 
     try {
-      console.log("🚪 Leaving place:", placeId, "for user:", user.uid);
 
       // Call the leave API
       await leavePlace(placeId, { userId: user.uid });
-      console.log("✅ Successfully left place");
 
       // Update global presence
       await updateCurrentPlace(null);

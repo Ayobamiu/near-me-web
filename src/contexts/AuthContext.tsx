@@ -87,7 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         doc(db, "userProfiles", userCredential.user.uid),
         userProfile
       );
-      console.log("✅ User profile created in Firestore");
     } catch (error) {
       console.error("Error signing up:", error);
       throw error;

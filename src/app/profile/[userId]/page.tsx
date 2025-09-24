@@ -148,9 +148,6 @@ export default function ProfilePage() {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  console.log("Connection request button clicked");
-                  console.log("Current user:", currentUser);
-                  console.log("Profile user:", profileUser);
                   setShowConnectionModal(true);
                 }}
                 className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
@@ -227,7 +224,6 @@ export default function ProfilePage() {
         <ConnectionRequestModal
           user={profileUser}
           onClose={() => {
-            console.log("Closing connection modal");
             setShowConnectionModal(false);
           }}
           onSuccess={handleConnectionSuccess}

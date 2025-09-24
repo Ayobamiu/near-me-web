@@ -84,7 +84,6 @@ function ChatListPageContent() {
     if (!user || loading) return;
     try {
       setIsLoading(true);
-      console.log("🔍 Loading chat conversations for user:", user.uid);
 
       // Get user's connections using the connection service
       const connections = await connectionService.getAcceptedConnections(
@@ -93,10 +92,7 @@ function ChatListPageContent() {
 
       // Helper function to process connections
       const processConnections = async (connections: UserConnection[]) => {
-        console.log("🔄 Processing connections:", connections.length, "total");
         const conversationPromises = connections.map(async (connection) => {
-          console.log("Processing connection:", connection);
-
           // Validate connection structure
           if (!connection || !connection.user || !connection.connection) {
             console.warn(
@@ -123,9 +119,6 @@ function ChatListPageContent() {
 
           // Get the last message from the conversation using subcollection
           const conversationId = [user.uid, otherUserId].sort().join("_");
-          console.log(
-            `🔍 Getting last message for conversation: ${conversationId}`
-          );
 
           const conversationRef = doc(db, "messages", conversationId);
           const messagesRef = collection(conversationRef, "messages");
@@ -141,25 +134,16 @@ function ChatListPageContent() {
 
           try {
             const lastMessageSnapshot = await getDocs(lastMessageQuery);
-            console.log(
-              `📨 Last message query result: ${lastMessageSnapshot.docs.length} messages found`
-            );
 
             if (!lastMessageSnapshot.empty) {
               const lastMsg = lastMessageSnapshot.docs[0].data();
               lastMessage = lastMsg.content || "";
               lastMessageTime = lastMsg.createdAt?.toDate() || new Date();
-              console.log(
-                `📝 Last message: "${lastMessage}" at ${lastMessageTime} | id: ${lastMessageSnapshot.docs[0].id}`
-              );
 
               // Count unread messages (messages after user's last read time)
               // For now, we'll set this to 0 - you can implement proper unread tracking later
               unreadCount = 0;
             } else {
-              console.log(
-                `📭 No messages found for conversation ${conversationId}`
-              );
             }
           } catch (error) {
             console.error(
@@ -191,17 +175,9 @@ function ChatListPageContent() {
             (a.lastMessageTime?.getTime() || 0)
         );
 
-        console.log(
-          "✅ Final conversations:",
-          validConversations.length,
-          "conversations"
-        );
         setConversations(validConversations);
         setIsLoading(false);
       };
-
-      console.log("📡 Query results:", connections.length, "connections");
-      console.log("Connections sample:", connections[0]);
 
       // Filter out invalid connections
       const validConnections = connections.filter((connection) => {
@@ -297,16 +273,13 @@ function ChatListPageContent() {
 
     setIsSending(true);
     try {
-      console.log(`🔍 Sending message via chatService`);
-
-      const result = await chatService.sendMessage({
+      chatService.sendMessage({
         senderId: user.uid,
         receiverId: selectedUserId,
         content: newMessage.trim(),
         messageType: "text",
       });
 
-      console.log(`✅ Message sent successfully with ID: ${result.messageId}`);
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);

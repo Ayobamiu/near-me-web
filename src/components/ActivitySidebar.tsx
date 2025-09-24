@@ -16,7 +16,6 @@ export default function ActivitySidebar({
   onViewProfile,
 }: ActivitySidebarProps) {
   const { onlineUsers } = usePresence();
-  console.log("onlineUsers", onlineUsers);
 
   const totalUsers = usersInRange.length + usersOutOfRange.length;
 

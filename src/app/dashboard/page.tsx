@@ -252,24 +252,16 @@ export default function Dashboard() {
         }
 
         // Join the place (API will handle proximity check)
-        console.log(
-          "🏠 Dashboard: Joining place",
-          placeId,
-          "for user",
-          user.uid
-        );
-        const joinResult = await joinPlace(placeId, {
+        await joinPlace(placeId, {
           userId: user.uid,
           lat: userLocation.lat,
           lng: userLocation.lng,
         });
-        console.log("🏠 Dashboard: Join result:", joinResult);
 
         // Set flag to indicate user came from dashboard auto-join
         sessionStorage.setItem("cameFromDashboard", "true");
 
         // Navigate to place page - user is already joined
-        console.log("🏠 Dashboard: Navigating to place page");
         router.push(`/place/${placeId}`);
 
         // Refresh recent places after joining
@@ -356,24 +348,16 @@ export default function Dashboard() {
         });
 
         // Join the place after creating it
-        console.log(
-          "🏠 Dashboard: Creating and joining place",
-          placeId,
-          "for user",
-          user.uid
-        );
         const joinResult = await joinPlace(placeId, {
           userId: user.uid,
           lat: userLocation.lat,
           lng: userLocation.lng,
         });
-        console.log("🏠 Dashboard: Join result:", joinResult);
 
         // Set flag to indicate user came from dashboard auto-join
         sessionStorage.setItem("cameFromDashboard", "true");
 
         // Navigate to place page - user is already joined
-        console.log("🏠 Dashboard: Navigating to place page");
         router.push(`/place/${placeId}`);
 
         // Refresh recent places after joining
