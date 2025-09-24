@@ -234,15 +234,6 @@ export default function ProfilePage() {
         />
       )}
 
-      {/* Debug info */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="fixed bottom-4 right-4 bg-black text-white p-2 text-xs rounded">
-          <div>showConnectionModal: {showConnectionModal.toString()}</div>
-          <div>currentUser: {currentUser ? "exists" : "null"}</div>
-          <div>profileUser: {profileUser ? "exists" : "null"}</div>
-        </div>
-      )}
-
       {showChatWindow && currentUser && (
         <ChatWindow
           otherUser={profileUser}

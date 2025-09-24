@@ -344,7 +344,7 @@ function ChatListPageContent() {
             Please sign in to view your messages.
           </p>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.push("/auth")}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
           >
             Go to Sign In

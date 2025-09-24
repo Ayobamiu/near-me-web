@@ -35,7 +35,7 @@ export default function ConnectionRequestModal({
         })
       );
       // Redirect to login page
-      window.location.href = "/";
+      window.location.href = "/auth";
       return;
     }
 
