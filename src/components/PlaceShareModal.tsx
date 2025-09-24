@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Place } from "@/types";
+import QRCode from "qrcode";
 
 interface PlaceShareModalProps {
   place: Place;
@@ -14,13 +15,37 @@ export default function PlaceShareModal({
 }: PlaceShareModalProps) {
   const [shareUrl, setShareUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>("");
+  const [isGeneratingQR, setIsGeneratingQR] = useState(false);
 
   useEffect(() => {
     // Generate shareable URL
     const baseUrl = window.location.origin;
     const shareUrl = `${baseUrl}/place/${place.id}`;
     setShareUrl(shareUrl);
+
+    // Generate QR code
+    generateQRCode(shareUrl);
   }, [place.id]);
+
+  const generateQRCode = async (url: string) => {
+    setIsGeneratingQR(true);
+    try {
+      const qrCodeUrl = await QRCode.toDataURL(url, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: "#000000",
+          light: "#FFFFFF",
+        },
+      });
+      setQrCodeDataUrl(qrCodeUrl);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+    } finally {
+      setIsGeneratingQR(false);
+    }
+  };
 
   const copyToClipboard = async () => {
     try {
@@ -119,6 +144,31 @@ export default function PlaceShareModal({
               {copied ? "Copied!" : "Copy"}
             </button>
           </div>
+        </div>
+
+        {/* QR Code Section */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            QR Code
+          </label>
+          <div className="flex justify-center">
+            <div className="w-48 h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+              {isGeneratingQR ? (
+                <div className="text-gray-500 text-sm">Generating QR...</div>
+              ) : qrCodeDataUrl ? (
+                <img
+                  src={qrCodeDataUrl}
+                  alt="QR Code for place"
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="text-gray-500 text-sm">Error generating QR</div>
+              )}
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 text-center mt-2">
+            Scan to join this place instantly
+          </p>
         </div>
 
         <div className="space-y-3">

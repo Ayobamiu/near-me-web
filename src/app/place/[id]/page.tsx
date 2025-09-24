@@ -26,6 +26,7 @@ import PlaceFeed from "@/components/PlaceFeed";
 import PeopleGrid from "@/components/PeopleGrid";
 import ProfileSidebar from "@/components/ProfileSidebar";
 import ActivitySidebar from "@/components/ActivitySidebar";
+import QRBadge from "@/components/QRBadge";
 import {
   doc,
   getDoc,
@@ -65,6 +66,7 @@ export default function PlacePage() {
   const [pendingConnectionsCount, setPendingConnectionsCount] = useState(0);
   const [activeConnectionsCount, setActiveConnectionsCount] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showQRBadge, setShowQRBadge] = useState(false);
   const [activeTab, setActiveTab] = useState<"feed" | "people">("people");
 
   const [connections, setConnections] = useState<UserConnection[]>([]);
@@ -107,7 +109,6 @@ export default function PlacePage() {
       return;
     }
 
-
     const interval = setInterval(async () => {
       try {
         const position = await getCurrentPosition();
@@ -118,7 +119,6 @@ export default function PlacePage() {
           place.originLocation!.lng,
           100
         );
-
 
         if (!isWithinRange) {
           // User moved out of range
@@ -273,7 +273,6 @@ export default function PlacePage() {
                 onSnapshot(
                   collection(db, "places", placeId, "users"),
                   async (snapshot) => {
-
                     if (placeData.originLocation) {
                       try {
                         const response = await getPlaceUsersCategorized(
@@ -329,7 +328,6 @@ export default function PlacePage() {
             onSnapshot(
               collection(db, "places", placeId, "users"),
               async (snapshot) => {
-
                 if (placeData.originLocation) {
                   try {
                     // Fetch users with their profiles via API
@@ -486,7 +484,6 @@ export default function PlacePage() {
     if (!user || !placeId) return;
 
     try {
-
       // Call the leave API
       await leavePlace(placeId, { userId: user.uid });
 
@@ -769,6 +766,25 @@ export default function PlacePage() {
 
             <div className="flex items-center space-x-1 flex-shrink-0">
               <button
+                onClick={() => setShowQRBadge(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Your QR Badge"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                  />
+                </svg>
+              </button>
+              <button
                 onClick={() => setShowShareModal(true)}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 title="Share place"
@@ -1024,6 +1040,13 @@ export default function PlacePage() {
           <PlaceShareModal
             place={place}
             onClose={() => setShowShareModal(false)}
+          />
+        )}
+
+        {/* QR Badge Modal */}
+        {showQRBadge && (
+          <QRBadge
+            onClose={() => setShowQRBadge(false)}
           />
         )}
       </div>

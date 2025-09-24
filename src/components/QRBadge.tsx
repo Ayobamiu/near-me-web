@@ -74,6 +74,20 @@ export default function QRBadge({ onClose }: QRBadgeProps) {
     }
   };
 
+  const copyProfileLink = async () => {
+    if (!user) return;
+
+    const profileUrl = `${window.location.origin}/profile/${user.uid}`;
+
+    try {
+      await navigator.clipboard.writeText(profileUrl);
+      alert("Profile link copied to clipboard!");
+    } catch (error) {
+      console.error("Failed to copy link:", error);
+      alert("Failed to copy link. Please try again.");
+    }
+  };
+
   if (!user) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -127,6 +141,26 @@ export default function QRBadge({ onClose }: QRBadgeProps) {
               {user.displayName || "Cirql User"}
             </h3>
             <p className="text-sm text-gray-600">Scan to connect instantly</p>
+          </div>
+
+          {/* Copyable Link Section */}
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-xs text-gray-500 mb-2">Your Profile Link:</p>
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={`${window.location.origin}/profile/${user.uid}`}
+                readOnly
+                className="flex-1 text-xs bg-white border border-gray-200 rounded px-2 py-1 text-gray-700"
+              />
+              <button
+                onClick={copyProfileLink}
+                className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                title="Copy link"
+              >
+                Copy
+              </button>
+            </div>
           </div>
 
           <div className="space-y-2">

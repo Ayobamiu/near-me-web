@@ -11,6 +11,8 @@ interface UserHeaderProps {
   onMessagesClick?: () => void;
   showMessagesButton?: boolean;
   onEditProfileClick?: () => void;
+  onQRBadgeClick?: () => void;
+  showQRBadgeButton?: boolean;
 }
 
 export default function UserHeader({
@@ -19,6 +21,8 @@ export default function UserHeader({
   onMessagesClick,
   showMessagesButton = true,
   onEditProfileClick,
+  onQRBadgeClick,
+  showQRBadgeButton = true,
 }: UserHeaderProps) {
   const { user, signOut } = useAuth();
   const { profile } = useUserProfile();
@@ -152,6 +156,29 @@ export default function UserHeader({
 
       {/* Right side - Action buttons */}
       <div className="flex items-center space-x-1">
+        {showQRBadgeButton && onQRBadgeClick && (
+          <button
+            onClick={onQRBadgeClick}
+            className="flex items-center space-x-1 px-2 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors text-sm font-medium"
+            title="My QR Badge"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+              />
+            </svg>
+            <span className="hidden sm:inline">QR Badge</span>
+          </button>
+        )}
+
         {showMessagesButton && onMessagesClick && (
           <button
             onClick={onMessagesClick}

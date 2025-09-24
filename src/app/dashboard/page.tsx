@@ -544,6 +544,8 @@ export default function Dashboard() {
           onMessagesClick={() => router.push("/chat")}
           showMessagesButton={true}
           onEditProfileClick={handleEditProfile}
+          onQRBadgeClick={() => setShowQRBadge(true)}
+          showQRBadgeButton={true}
         />
 
         <div className="max-w-md mx-auto px-4 py-8">
@@ -672,13 +674,6 @@ export default function Dashboard() {
           <div className="bg-white rounded-lg shadow-sm border p-6">
             {!isScanning ? (
               <div className="space-y-4">
-                <button
-                  onClick={() => setShowQRBadge(true)}
-                  className="w-full py-3 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  My QR Badge
-                </button>
-
                 <button
                   onClick={() => setIsScanning(true)}
                   className="w-full py-3 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
