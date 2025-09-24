@@ -315,7 +315,7 @@ export default function ProfileViewer({ user, onClose }: ProfileViewerProps) {
                 Basic Information
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {profile.age && (
+                {profile.age && profile.showAge && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Age
@@ -342,12 +342,14 @@ export default function ProfileViewer({ user, onClose }: ProfileViewerProps) {
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email
-                  </label>
-                  <p className="text-gray-900">{profile.email}</p>
-                </div>
+                {profile.showEmail && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <p className="text-gray-900">{profile.email}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -386,7 +388,7 @@ export default function ProfileViewer({ user, onClose }: ProfileViewerProps) {
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">
                   Social Links
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-3 flex flex-wrap gap-2">
                   {profile.socialLinks.instagram && (
                     <a
                       href={`https://instagram.com/${profile.socialLinks.instagram.replace(

@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         displayName: name,
       });
 
-      // Create user profile in Firestore
+      // Create minimal user profile in Firestore - will be completed during onboarding
       const userProfile = {
         id: userCredential.user.uid,
         displayName: name,
@@ -72,6 +72,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profilePictureUrl: userCredential.user.photoURL || "",
         interests: [],
         bio: "",
+        headline: "", // Will be filled during onboarding
+        occupation: "", // Will be filled during onboarding
+        socialLinks: {},
+        isVisible: true,
+        distanceRadius: 100,
+        showAge: false, // Will be set during onboarding
+        showEmail: false, // Will be set during onboarding
         createdAt: new Date(),
         isOnline: true,
       };

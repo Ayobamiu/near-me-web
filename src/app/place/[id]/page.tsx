@@ -18,6 +18,7 @@ import {
 import connectionService from "@/lib/connectionService";
 // import userProfileService from "@/lib/userProfileService"; // Not used directly in this component
 import ProfileManager from "@/components/ProfileManager";
+import ProfileCompletionGate from "@/components/ProfileCompletionGate";
 import ProfileViewer from "@/components/ProfileViewer";
 import ConnectionManager from "@/components/ConnectionManager";
 import PlaceShareModal from "@/components/PlaceShareModal";
@@ -739,347 +740,349 @@ export default function PlacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Discord-style Header */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <button
-              onClick={() => router.push("/")}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+    <ProfileCompletionGate>
+      <div className="min-h-screen bg-gray-50">
+        {/* Discord-style Header */}
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <button
+                onClick={() => router.push("/")}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
 
-            <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-sm">
-                  {place.name.charAt(0)}
-                </span>
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <span className="text-white font-bold text-sm">
+                    {place.name.charAt(0)}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  {isEditingRoomName ? (
+                    <input
+                      type="text"
+                      value={newRoomName}
+                      onChange={(e) => setNewRoomName(e.target.value)}
+                      className="text-lg font-semibold text-gray-900 bg-transparent border-b border-blue-500 focus:outline-none focus:border-blue-700 px-1 py-0.5 w-full"
+                      placeholder="Enter room name"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSaveRoomName();
+                        } else if (e.key === "Escape") {
+                          handleCancelEditRoomName();
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <h1 className="text-lg font-semibold text-gray-900 truncate">
+                        {place.name}
+                      </h1>
+                      {place.createdBy === user?.uid && (
+                        <button
+                          onClick={handleEditRoomName}
+                          className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                          title="Edit room name"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-500 truncate">
+                    QR: {place.qrCode}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                {isEditingRoomName ? (
-                  <input
-                    type="text"
-                    value={newRoomName}
-                    onChange={(e) => setNewRoomName(e.target.value)}
-                    className="text-lg font-semibold text-gray-900 bg-transparent border-b border-blue-500 focus:outline-none focus:border-blue-700 px-1 py-0.5 w-full"
-                    placeholder="Enter room name"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleSaveRoomName();
-                      } else if (e.key === "Escape") {
-                        handleCancelEditRoomName();
-                      }
-                    }}
+            </div>
+
+            <div className="flex items-center space-x-1 flex-shrink-0">
+              <button
+                onClick={() => setShowShareModal(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Share place"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={handleLeavePlace}
+                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                title="Leave place"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 16l4-4m0 0l-4-4m4 4H3m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {isEditingRoomName && (
+            <div className="flex justify-center space-x-2 mt-3">
+              <button
+                onClick={handleSaveRoomName}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={handleCancelEditRoomName}
+                className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile Status Section - Only visible on mobile */}
+        <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+                {profile?.profilePictureUrl ? (
+                  <img
+                    src={profile.profilePictureUrl}
+                    alt={profile.displayName || "User"}
+                    className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="flex items-center space-x-2 min-w-0">
-                    <h1 className="text-lg font-semibold text-gray-900 truncate">
-                      {place.name}
-                    </h1>
-                    {place.createdBy === user?.uid && (
-                      <button
-                        onClick={handleEditRoomName}
-                        className="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
-                        title="Edit room name"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  <span className="text-blue-600 font-semibold text-sm">
+                    {profile?.displayName?.charAt(0) ||
+                      user?.displayName?.charAt(0) ||
+                      user?.email?.charAt(0) ||
+                      "A"}
+                  </span>
                 )}
-                <p className="text-xs text-gray-500 truncate">
-                  QR: {place.qrCode}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.displayName || "Anonymous User"}
                 </p>
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-xs text-gray-500">Online</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="flex items-center space-x-1 flex-shrink-0">
-            <button
-              onClick={() => setShowShareModal(true)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Share place"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() =>
+                  router.push(`/chat?returnTo=place&placeId=${placeId}`)
+                }
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Messages"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={handleLeavePlace}
-              className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-              title="Leave place"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowConnectionManager(true)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative"
+                title="Connections"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 16l4-4m0 0l-4-4m4 4H3m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                />
-              </svg>
-            </button>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  />
+                </svg>
+                {pendingConnectionsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-500 text-white animate-pulse min-w-[18px] h-[18px]">
+                    {pendingConnectionsCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
-        {isEditingRoomName && (
-          <div className="flex justify-center space-x-2 mt-3">
-            <button
-              onClick={handleSaveRoomName}
-              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
-            >
-              Save
-            </button>
-            <button
-              onClick={handleCancelEditRoomName}
-              className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Mobile Status Section - Only visible on mobile */}
-      <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
-              {profile?.profilePictureUrl ? (
-                <img
-                  src={profile.profilePictureUrl}
-                  alt={profile.displayName || "User"}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-blue-600 font-semibold text-sm">
-                  {profile?.displayName?.charAt(0) ||
-                    user?.displayName?.charAt(0) ||
-                    user?.email?.charAt(0) ||
-                    "A"}
-                </span>
-              )}
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">
-                {user?.displayName || "Anonymous User"}
-              </p>
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs text-gray-500">Online</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() =>
-                router.push(`/chat?returnTo=place&placeId=${placeId}`)
-              }
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              title="Messages"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-            </button>
-            <button
-              onClick={() => setShowConnectionManager(true)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors relative"
-              title="Connections"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              {pendingConnectionsCount > 0 && (
-                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-orange-500 text-white animate-pulse min-w-[18px] h-[18px]">
-                  {pendingConnectionsCount}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content - LinkedIn Style Layout */}
-      <div className="flex h-[calc(100vh-73px)]">
-        {/* Content Area - LinkedIn Style Layout */}
-        <div className="flex-1 overflow-y-auto bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 py-6">
-            <div className="flex gap-6">
-              {/* Left Sidebar - Profile */}
-              <div className="hidden lg:block">
-                <ProfileSidebar
-                  onViewProfile={handleViewProfile}
-                  pendingConnectionsCount={pendingConnectionsCount}
-                  activeConnectionsCount={activeConnectionsCount}
-                  onEditProfile={handleEditProfile}
-                  onManageConnections={() => setShowConnectionManager(true)}
-                  onMessages={() =>
-                    router.push(`/chat?returnTo=place&placeId=${placeId}`)
-                  }
-                  onSignOut={signOut}
-                />
-              </div>
-
-              {/* Main Content */}
-              <div className="flex-1 min-w-0">
-                {/* Tab Navigation */}
-                <div className="mb-6">
-                  <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8">
-                      {[
-                        { id: "people", label: "People", icon: "👥" },
-                        { id: "feed", label: "Feed", icon: "📝" },
-                      ].map((tab) => (
-                        <button
-                          key={tab.id}
-                          onClick={() =>
-                            setActiveTab(tab.id as "feed" | "people")
-                          }
-                          className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                            activeTab === tab.id
-                              ? "border-blue-500 text-blue-600"
-                              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                          }`}
-                        >
-                          <span className="mr-2">{tab.icon}</span>
-                          {tab.label}
-                        </button>
-                      ))}
-                    </nav>
-                  </div>
+        {/* Main Content - LinkedIn Style Layout */}
+        <div className="flex h-[calc(100vh-73px)]">
+          {/* Content Area - LinkedIn Style Layout */}
+          <div className="flex-1 overflow-y-auto bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 py-6">
+              <div className="flex gap-6">
+                {/* Left Sidebar - Profile */}
+                <div className="hidden lg:block">
+                  <ProfileSidebar
+                    onViewProfile={handleViewProfile}
+                    pendingConnectionsCount={pendingConnectionsCount}
+                    activeConnectionsCount={activeConnectionsCount}
+                    onEditProfile={handleEditProfile}
+                    onManageConnections={() => setShowConnectionManager(true)}
+                    onMessages={() =>
+                      router.push(`/chat?returnTo=place&placeId=${placeId}`)
+                    }
+                    onSignOut={signOut}
+                  />
                 </div>
 
-                {/* Tab Content */}
-                {activeTab === "feed" && (
-                  <PlaceFeed
-                    placeId={placeId}
-                    onViewProfile={handleViewProfile}
-                  />
-                )}
+                {/* Main Content */}
+                <div className="flex-1 min-w-0">
+                  {/* Tab Navigation */}
+                  <div className="mb-6">
+                    <div className="border-b border-gray-200">
+                      <nav className="-mb-px flex space-x-8">
+                        {[
+                          { id: "people", label: "People", icon: "👥" },
+                          { id: "feed", label: "Feed", icon: "📝" },
+                        ].map((tab) => (
+                          <button
+                            key={tab.id}
+                            onClick={() =>
+                              setActiveTab(tab.id as "feed" | "people")
+                            }
+                            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                              activeTab === tab.id
+                                ? "border-blue-500 text-blue-600"
+                                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                            }`}
+                          >
+                            <span className="mr-2">{tab.icon}</span>
+                            {tab.label}
+                          </button>
+                        ))}
+                      </nav>
+                    </div>
+                  </div>
 
-                {activeTab === "people" && (
-                  <PeopleGrid
+                  {/* Tab Content */}
+                  {activeTab === "feed" && (
+                    <PlaceFeed
+                      placeId={placeId}
+                      onViewProfile={handleViewProfile}
+                    />
+                  )}
+
+                  {activeTab === "people" && (
+                    <PeopleGrid
+                      usersInRange={usersInRange}
+                      usersOutOfRange={usersOutOfRange}
+                      onViewProfile={handleViewProfile}
+                      onConnect={handleConnect}
+                    />
+                  )}
+                </div>
+
+                {/* Right Sidebar - Activity */}
+                <div className="hidden xl:block">
+                  <ActivitySidebar
                     usersInRange={usersInRange}
                     usersOutOfRange={usersOutOfRange}
                     onViewProfile={handleViewProfile}
-                    onConnect={handleConnect}
                   />
-                )}
-              </div>
-
-              {/* Right Sidebar - Activity */}
-              <div className="hidden xl:block">
-                <ActivitySidebar
-                  usersInRange={usersInRange}
-                  usersOutOfRange={usersOutOfRange}
-                  onViewProfile={handleViewProfile}
-                />
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {showProfileManager && (
+          <ProfileManager
+            onClose={() => setShowProfileManager(false)}
+            onSave={() => {
+              // Reload place data to get updated profiles
+              loadPlaceData();
+            }}
+          />
+        )}
+
+        {/* Profile Viewer Modal */}
+        {selectedUser && (
+          <ProfileViewer
+            user={selectedUser}
+            onClose={() => setSelectedUser(null)}
+          />
+        )}
+
+        {/* Connection Manager Modal */}
+        {showConnectionManager && (
+          <ConnectionManager
+            onClose={handleConnectionManagerClose}
+            connections={connections}
+            handleAcceptConnection={handleAcceptConnection}
+            handleRejectConnection={handleRejectConnection}
+            handleRemoveConnection={handleRemoveConnection}
+            isLoading={isLoadingConnections}
+            error={errorConnections}
+          />
+        )}
+
+        {/* Place Share Modal */}
+        {showShareModal && place && (
+          <PlaceShareModal
+            place={place}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
       </div>
-
-      {showProfileManager && (
-        <ProfileManager
-          onClose={() => setShowProfileManager(false)}
-          onSave={() => {
-            // Reload place data to get updated profiles
-            loadPlaceData();
-          }}
-        />
-      )}
-
-      {/* Profile Viewer Modal */}
-      {selectedUser && (
-        <ProfileViewer
-          user={selectedUser}
-          onClose={() => setSelectedUser(null)}
-        />
-      )}
-
-      {/* Connection Manager Modal */}
-      {showConnectionManager && (
-        <ConnectionManager
-          onClose={handleConnectionManagerClose}
-          connections={connections}
-          handleAcceptConnection={handleAcceptConnection}
-          handleRejectConnection={handleRejectConnection}
-          handleRemoveConnection={handleRemoveConnection}
-          isLoading={isLoadingConnections}
-          error={errorConnections}
-        />
-      )}
-
-      {/* Place Share Modal */}
-      {showShareModal && place && (
-        <PlaceShareModal
-          place={place}
-          onClose={() => setShowShareModal(false)}
-        />
-      )}
-    </div>
+    </ProfileCompletionGate>
   );
 }
